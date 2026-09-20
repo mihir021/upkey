@@ -29,3 +29,10 @@ planning/
 devops-mern-project-plan.md
 learning-roadmap.md
 
+# Python (ml-service)
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.pytest_cache/
