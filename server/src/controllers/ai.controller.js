@@ -12,18 +12,59 @@ const Product = require('../models/Product');
 /**
  * Resilient fallback handler when the external LLM is offline or initializing.
  * Ensures the user is never blocked and always receives safe, helpful skincare advice.
+/**
+ * Extracts numeric budget/price ceiling from user message and profile.
+ * Accurately parses queries such as "under 500", "below 1000", "< 500", "budget 500", etc.
+ */
+function extractBudget(message, user_profile) {
+  // Check user profile first if explicitly set
+  if (user_profile && typeof user_profile.budget === 'number' && user_profile.budget > 0) {
+    return user_profile.budget;
+  }
+  if (!message || typeof message !== 'string') return null;
+
+  const clean = message.toLowerCase();
+
+  // Regex patterns matching English & common e-commerce phrasing
+  const patterns = [
+    /(?:under|below|less\s+than|within|upto|up\s+to|max|budget\s*(?:of|is|:)?)\s*(?:₹|rs\.?|inr)?\s*(\d{2,6})/i,
+    /(?:₹|rs\.?|inr)\s*(\d{2,6})\s*(?:or\s+less|budget|max|limit)/i,
+    /(\d{2,6})\s*(?:₹|rs\.?|inr)?\s*(?:ke\s*andar|or\s*less|max|budget)/i,
+    /(?:<|<=)\s*(?:₹|rs\.?|inr)?\s*(\d{2,6})/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = clean.match(pattern);
+    if (match && match[1]) {
+      const val = parseInt(match[1], 10);
+      if (!isNaN(val) && val > 0) return val;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Resilient fallback handler when the external LLM is offline or initializing.
+ * Ensures the user is never blocked and always receives safe, helpful skincare advice.
  */
 async function handleLocalFallback(message, user_profile) {
   const cleanMsg = message.trim().toLowerCase();
+  const explicitBudget = extractBudget(message, user_profile);
 
   // 1. Clinical safety guardrail: detect medical / infection / prescription queries
   if (/(cure|fungal|infection|medical|prescri|disease|doctor|dermatologist|antibiotic)/i.test(cleanMsg)) {
-    const gentleProducts = await Product.find({
+    const query = {
       $or: [
         { skin_types: { $in: [/sensitive/i, /all/i] } },
         { concerns: { $in: [/calming/i, /soothing/i, /barrier/i, /sensitive/i] } },
       ],
-    }).sort({ rating: -1 }).limit(3).lean();
+    };
+    if (explicitBudget) {
+      query.price_inr = { $lte: explicitBudget };
+    }
+
+    const gentleProducts = await Product.find(query).sort({ rating: -1 }).limit(3).lean();
 
     return {
       message: "Important Note: I am Joyory's AI beauty advisor and cannot diagnose or prescribe medical treatments. For skin infections, severe conditions, or medical concerns, please consult a qualified dermatologist or physician.\n\nFor gentle, daily barrier maintenance on sensitive skin, here are calming formulas from our catalog:",
@@ -83,9 +124,10 @@ async function handleLocalFallback(message, user_profile) {
 
   // 4. Skincare Routine Intent
   if (/(routine|regimen|steps|morning|night|evening)/i.test(cleanMsg)) {
-    const routineCleansers = await Product.find({ category: /cleanser/i }).sort({ rating: -1 }).limit(1).lean();
-    const routineSerums = await Product.find({ category: /serum/i }).sort({ rating: -1 }).limit(1).lean();
-    const routineMoisturizers = await Product.find({ category: /moisturizer|sunscreen/i }).sort({ rating: -1 }).limit(1).lean();
+    const routineQuery = explicitBudget ? { price_inr: { $lte: explicitBudget } } : {};
+    const routineCleansers = await Product.find({ ...routineQuery, category: /cleanser/i }).sort({ rating: -1 }).limit(1).lean();
+    const routineSerums = await Product.find({ ...routineQuery, category: /serum/i }).sort({ rating: -1 }).limit(1).lean();
+    const routineMoisturizers = await Product.find({ ...routineQuery, category: /moisturizer|sunscreen/i }).sort({ rating: -1 }).limit(1).lean();
     const routineItems = [...routineCleansers, ...routineSerums, ...routineMoisturizers];
 
     return {
@@ -110,13 +152,13 @@ async function handleLocalFallback(message, user_profile) {
     };
   }
 
-  // 5. Targeted active ingredient or search query
+  // 5. Targeted active ingredient, category, or budget search query
   try {
-    const stopwords = ['the', 'and', 'for', 'with', 'show', 'find', 'want', 'need', 'give', 'some', 'what', 'which', 'best', 'products', 'have'];
+    const stopwords = ['the', 'and', 'for', 'with', 'show', 'find', 'want', 'need', 'give', 'some', 'what', 'which', 'best', 'products', 'product', 'have', 'under', 'below', 'less', 'than', 'price'];
     const terms = cleanMsg
       .replace(/[^a-zA-Z0-9\s]/g, ' ')
       .split(/\s+/)
-      .filter((w) => w.length > 2 && !stopwords.includes(w));
+      .filter((w) => w.length > 2 && !stopwords.includes(w) && isNaN(w));
 
     const orConditions = [];
 
@@ -145,15 +187,25 @@ async function handleLocalFallback(message, user_profile) {
       query = { $or: orConditions };
     }
 
-    // Apply user budget filter if specified
-    if (user_profile && typeof user_profile.budget === 'number' && user_profile.budget > 0) {
-      query.price_inr = { $lte: user_profile.budget };
+    // Apply strict budget filter if specified in query or user profile
+    if (explicitBudget) {
+      query.price_inr = { $lte: explicitBudget };
     }
 
-    const products = await Product.find(query).sort({ rating: -1 }).limit(4).lean();
+    let products = await Product.find(query).sort({ rating: -1, price_inr: 1 }).limit(4).lean();
+
+    // If query was purely a budget filter (terms was empty) and products were found:
+    if (products.length === 0 && explicitBudget) {
+      products = await Product.find({ price_inr: { $lte: explicitBudget } })
+        .sort({ rating: -1, price_inr: 1 })
+        .limit(4)
+        .lean();
+    }
+
     if (products.length > 0) {
+      const budgetNote = explicitBudget ? ` priced under ₹${explicitBudget}` : '';
       return {
-        message: `Here are our top recommended products featuring active ingredients matching your query:`,
+        message: `Here are our top recommended products${budgetNote} matching your skincare query:`,
         intent: 'PRODUCT_RECOMMENDATION',
         tools_used: ['search_products'],
         result: {
@@ -202,11 +254,35 @@ async function handleGeminiChat(message, user_profile, product_id, conversation_
     'gemini-3.1-flash-lite',
   ];
 
+  // Extract explicit price / budget ceiling from user's message or profile
+  const explicitBudget = extractBudget(message, user_profile);
+
   // 1. Fetch catalog products to ground the AI model with verified store inventory
-  const catalog = await Product.find({})
+  // If user requested a budget ceiling (e.g. "under 500"), strictly filter store catalog
+  let catalogQuery = {};
+  if (explicitBudget) {
+    catalogQuery.price_inr = { $lte: explicitBudget };
+  }
+
+  let catalog = await Product.find(catalogQuery)
     .select('id name brand category price_inr rating skin_types concerns budget_tier')
-    .limit(40)
+    .sort({ rating: -1, price_inr: 1 })
+    .limit(45)
     .lean();
+
+  // If budget query returned zero items (e.g. extremely low budget), fallback to lowest priced items
+  if (catalog.length === 0 && explicitBudget) {
+    catalog = await Product.find({})
+      .select('id name brand category price_inr rating skin_types concerns budget_tier')
+      .sort({ price_inr: 1 })
+      .limit(30)
+      .lean();
+  } else if (!explicitBudget) {
+    catalog = await Product.find({})
+      .select('id name brand category price_inr rating skin_types concerns budget_tier')
+      .limit(45)
+      .lean();
+  }
 
   const catalogSummary = catalog
     .map(p => `[${p.id}] ${p.name} by ${p.brand} | ₹${p.price_inr} | Cat: ${p.category} | Skin: ${p.skin_types?.join(', ') || 'All'} | Concerns: ${p.concerns || 'N/A'}`)
@@ -215,8 +291,14 @@ async function handleGeminiChat(message, user_profile, product_id, conversation_
   // 2. Prepare user profile context for personalization
   let profileText = 'Guest User (no saved skin profile)';
   if (user_profile) {
-    profileText = `Skin Type: ${user_profile.skin_type || 'Unspecified'}, Skin Tone: ${user_profile.skin_tone || 'Unspecified'}, Concerns: ${Array.isArray(user_profile.concerns) ? user_profile.concerns.join(', ') : 'None'}, Budget: ₹${user_profile.budget || 'Flexible'}`;
+    profileText = `Skin Type: ${user_profile.skin_type || 'Unspecified'}, Skin Tone: ${user_profile.skin_tone || 'Unspecified'}, Concerns: ${Array.isArray(user_profile.concerns) ? user_profile.concerns.join(', ') : 'None'}, Budget: ₹${user_profile.budget || (explicitBudget || 'Flexible')}`;
+  } else if (explicitBudget) {
+    profileText = `Budget Constraint: Max ₹${explicitBudget}`;
   }
+
+  const budgetRule = explicitBudget
+    ? `\n7. STRICT BUDGET MANDATE: The user explicitly requested products under/within ₹${explicitBudget}. You MUST ONLY recommend, cite, and discuss products from the catalog that cost ₹${explicitBudget} or less. NEVER recommend or mention any product priced above ₹${explicitBudget}.`
+    : '';
 
   // 3. Grounding System Instructions for the AI Skincare Advisor
   const systemInstructionText = `You are Joyory's expert AI Skincare & Beauty Advisor.
@@ -234,8 +316,8 @@ Instructions:
 3. If the user asks about routines, recommend a step-by-step routine (Cleanser -> Toner -> Serum -> Moisturizer -> Sunscreen) using catalog products where possible.
 4. If the user asks general skincare questions (e.g. "how to treat acne", "what causes dry skin"), explain clearly and recommend targeted ingredients and products from the catalog.
 5. Format your response cleanly using markdown (bullet points, bold text, headings).
-6. Keep recommendations tailored to their skin type and budget.
-7. If the user asks about severe medical skin conditions or infections, state that you are a beauty advisor and advise consulting a dermatologist or doctor, while suggesting gentle barrier-supportive products.`;
+6. Keep recommendations tailored to their skin type and budget.${budgetRule}
+8. If the user asks about severe medical skin conditions or infections, state that you are a beauty advisor and advise consulting a dermatologist or doctor, while suggesting gentle barrier-supportive products.`;
 
   // 4. Build contents array including conversation history for multi-turn context
   const contents = [];
@@ -299,12 +381,30 @@ Instructions:
       const idMatches = [...new Set(replyText.match(/P0\d{2}/g) || [])];
       let matchedProducts = [];
       if (idMatches.length > 0) {
-        matchedProducts = await Product.find({ id: { $in: idMatches } }).lean();
+        const filter = { id: { $in: idMatches } };
+        if (explicitBudget) {
+          filter.price_inr = { $lte: explicitBudget };
+        }
+        matchedProducts = await Product.find(filter).lean();
       }
 
-      // If no specific product ID was mentioned but user asked for recommendations, include relevant catalog items
-      if (matchedProducts.length === 0 && /(recommend|suggest|product|serum|cleanser|cream|moisturizer|sunscreen|best|buy|find)/i.test(message)) {
+      // If explicit budget was set and few or no products matched, supplement from verified catalog <= budget
+      if (explicitBudget && matchedProducts.length < 3) {
+        const extra = await Product.find({
+          price_inr: { $lte: explicitBudget },
+          id: { $nin: matchedProducts.map(p => p.id) },
+        })
+          .sort({ rating: -1 })
+          .limit(4 - matchedProducts.length)
+          .lean();
+        matchedProducts = [...matchedProducts, ...extra];
+      } else if (matchedProducts.length === 0 && /(recommend|suggest|product|serum|cleanser|cream|moisturizer|sunscreen|best|buy|find)/i.test(message)) {
         matchedProducts = catalog.slice(0, 3);
+      }
+
+      // Strict enforcement: ensure NO product exceeding explicitBudget can ever be returned
+      if (explicitBudget) {
+        matchedProducts = matchedProducts.filter(p => (p.price_inr || 0) <= explicitBudget);
       }
 
       return {

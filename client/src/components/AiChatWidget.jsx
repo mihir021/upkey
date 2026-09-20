@@ -84,6 +84,166 @@ function extractProducts(result) {
   return [];
 }
 
+// ─── Contextual thinking phases for live AI progress ─────────────────────────
+const THINKING_PHASES = [
+  { icon: '🔍', text: 'Scanning catalog formulations & active prices…', detail: 'Evaluating 40+ verified clinical items' },
+  { icon: '🧪', text: 'Analyzing ingredients & dermatological match…', detail: 'Balancing active barrier concentrations' },
+  { icon: '💰', text: 'Filtering budget constraints & verified inventory…', detail: 'Applying strict pricing ceiling' },
+  { icon: '✨', text: 'Synthesizing tailored recommendation…', detail: 'Formulating step-by-step guidance' },
+];
+
+/**
+ * AiThinkingIndicator - Alive, interactive AI thinking animation component.
+ * Features a glowing pulsing mascot head, dynamic neural equalizer bars,
+ * rotating live progress phases, user click-to-energize interactions,
+ * and a shimmering skeleton card preview.
+ */
+function AiThinkingIndicator() {
+  const [phaseIndex, setPhaseIndex] = useState(0);
+  const [sparkles, setSparkles] = useState(0);
+  const [hovered, setHovered] = useState(false);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPhaseIndex(prev => (prev + 1) % THINKING_PHASES.length);
+    }, 1300);
+    return () => clearInterval(timer);
+  }, []);
+
+  const current = THINKING_PHASES[phaseIndex];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: '92%' }}>
+      {/* ── Main Thinking Bubble ── */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        {/* Animated Mascot Head with Glowing Halo Ring */}
+        <div
+          style={{
+            position: 'relative', width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+            background: 'linear-gradient(135deg, #E8633A, #F59E0B)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 16px rgba(232,99,58,.4), 0 2px 8px rgba(0,0,0,.1)',
+            transition: 'transform .2s',
+            transform: hovered ? 'scale(1.1) rotate(-5deg)' : 'scale(1)',
+            cursor: 'pointer',
+          }}
+          onClick={() => {
+            setSparkles(s => s + 1);
+            setPhaseIndex(p => (p + 1) % THINKING_PHASES.length);
+          }}
+          title="Click to energize AI!"
+        >
+          {/* Orbiting particle ring */}
+          <div style={{
+            position: 'absolute', inset: -3, borderRadius: '50%',
+            border: '1.5px dashed rgba(232,99,58,.5)',
+            animation: 'ai-orbit-spin 4s linear infinite',
+          }} />
+          <Bot size={17} color="#fff" />
+        </div>
+
+        {/* Interactive Speech & Waveform Container */}
+        <div
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          onClick={() => setSparkles(s => s + 1)}
+          style={{
+            background: '#fff',
+            border: '1.5px solid #EADFD4',
+            borderRadius: '18px 18px 18px 4px',
+            padding: '12px 16px',
+            boxShadow: hovered ? '0 8px 24px rgba(232,99,58,.16)' : '0 2px 10px rgba(35,30,27,.04)',
+            transition: 'all .25s ease',
+            cursor: 'pointer',
+            minWidth: 230,
+            maxWidth: 320,
+          }}
+          title="Click to interact with the thinking engine ✨"
+        >
+          {/* Header Row: Live Equalizer Bars + Phase Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {/* Dynamic 4-Bar Neural Equalizer */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 2.5, height: 16 }}>
+                {[0, 1, 2, 3].map(i => (
+                  <span
+                    key={i}
+                    style={{
+                      width: 3,
+                      borderRadius: 3,
+                      background: i % 2 === 0 ? '#E8633A' : '#F59E0B',
+                      animation: `ai-wave-bar ${0.6 + i * 0.15}s ease-in-out infinite alternate`,
+                      animationDelay: `${i * 120}ms`,
+                    }}
+                  />
+                ))}
+              </div>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#E8633A', letterSpacing: .6, textTransform: 'uppercase' }}>
+                Joyory AI Engine
+              </span>
+            </div>
+
+            {/* Sparkle click badge */}
+            <span style={{
+              fontSize: 10, fontWeight: 700,
+              color: sparkles > 0 ? '#E8633A' : '#8A7D75',
+              background: sparkles > 0 ? '#FDE8D8' : '#FAF6F2',
+              padding: '2px 7px', borderRadius: 10,
+              transition: 'all .2s',
+            }}>
+              {sparkles > 0 ? `✨ +${sparkles}` : '⚡ Active'}
+            </span>
+          </div>
+
+          {/* Dynamic Thinking Phase Micro-copy with Fade-in animation */}
+          <div key={phaseIndex} style={{ animation: 'ai-phase-fade .35s ease-out' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, color: '#231E1B', lineHeight: 1.35 }}>
+              <span>{current.icon}</span>
+              <span>{current.text}</span>
+            </div>
+            <div style={{ fontSize: 10.5, color: '#8A7D75', marginTop: 3, paddingLeft: 22 }}>
+              {current.detail}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Shimmering Skeleton Product Card Preview (Shows work in progress) */}
+      <div
+        style={{
+          marginLeft: 44,
+          width: 200,
+          background: '#fff',
+          border: '1.5px solid #F0E8E0',
+          borderRadius: 14,
+          padding: '10px 12px',
+          position: 'relative',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+        }}
+      >
+        {/* Shimmer sweep beam */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'linear-gradient(90deg, transparent 0%, rgba(232,99,58,.08) 50%, transparent 100%)',
+          animation: 'ai-shimmer-sweep 1.6s ease-in-out infinite',
+          pointerEvents: 'none',
+        }} />
+
+        <div style={{ width: '40%', height: 8, borderRadius: 4, background: '#F5EFE9' }} />
+        <div style={{ width: '85%', height: 10, borderRadius: 4, background: '#EADFD4' }} />
+        <div style={{ width: '60%', height: 8, borderRadius: 4, background: '#F5EFE9' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+          <div style={{ width: 45, height: 12, borderRadius: 4, background: '#FDE8D8' }} />
+          <div style={{ width: 40, height: 18, borderRadius: 6, background: '#F5EFE9' }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main component ─────────────────────────────────────────────────────────
 export default function AiChatWidget() {
   const navigate = useNavigate();
@@ -369,26 +529,7 @@ export default function AiChatWidget() {
             ))}
 
             {/* Typing indicator */}
-            {loading && (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                  background: 'linear-gradient(135deg, #fde8d8, #f0c4b0)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Bot size={14} color="#E8633A" />
-                </div>
-                <div style={{
-                  background: '#fff', border: '1.5px solid #EADFD4',
-                  borderRadius: '18px 18px 18px 4px', padding: '12px 18px',
-                  display: 'flex', gap: 5, alignItems: 'center',
-                }}>
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#E8633A', animation: 'ai-dot-bounce .6s ease-in-out infinite', opacity: .6 }} />
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#E8633A', animation: 'ai-dot-bounce .6s ease-in-out .15s infinite', opacity: .6 }} />
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#E8633A', animation: 'ai-dot-bounce .6s ease-in-out .3s infinite', opacity: .6 }} />
-                </div>
-              </div>
-            )}
+            {loading && <AiThinkingIndicator />}
 
             <div ref={bottomRef} />
           </div>
@@ -445,6 +586,23 @@ export default function AiChatWidget() {
         @keyframes ai-panel-enter {
           from { opacity: 0; transform: translateY(24px) scale(.96); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes ai-wave-bar {
+          0% { height: 4px; opacity: 0.4; }
+          50% { height: 16px; opacity: 1; }
+          100% { height: 7px; opacity: 0.6; }
+        }
+        @keyframes ai-orbit-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes ai-shimmer-sweep {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+        @keyframes ai-phase-fade {
+          from { opacity: 0; transform: translateY(3px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         @keyframes ai-dot-bounce {
           0%, 100% { transform: translateY(0); opacity: .4; }
