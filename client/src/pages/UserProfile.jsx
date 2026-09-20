@@ -134,7 +134,8 @@ function CustomTooltip({ active, payload, label }) {
 export default function UserProfile() {
   const navigate = useNavigate();
   const { user, fetchMe } = useAuth();
-  const { orders, wishlist } = useCart();
+  const { wishlist } = useCart();
+  const [orders, setOrders] = useState([]);
 
   // Reference timestamp stored once on mount to avoid impure Date calls during render
   const [referenceTimestamp] = useState(() => Date.now());
@@ -148,6 +149,10 @@ export default function UserProfile() {
     api.get('/orders/rewards/balance')
       .then((res) => setCoinBalance(res.data.coinsBalance))
       .catch((err) => console.error('Rewards balance check error:', err));
+      
+    api.get('/orders')
+      .then((res) => setOrders(res.data))
+      .catch((err) => console.error('Error fetching orders:', err));
   }, [fetchMe]);
 
   // ── Analytics Computations ──────────────────────────────────────────────────
