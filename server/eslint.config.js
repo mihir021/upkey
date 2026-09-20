@@ -12,6 +12,17 @@ module.exports = [
         ...globals.jest, // describe/it/expect etc. used in tests/
       },
     },
+    rules: {
+      // Allow intentional unused parameters/variables prefixed with an underscore
+      'no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
   },
   {
     ignores: ['node_modules/**', 'coverage/**'],

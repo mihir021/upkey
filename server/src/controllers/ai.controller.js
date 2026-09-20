@@ -36,16 +36,34 @@ async function handleLocalFallback(message, user_profile) {
       .split(/\s+/)
       .filter((w) => w.length > 2 && !stopwords.includes(w));
 
-    let query = {};
+    const orConditions = [];
+
+    // Match query terms against product name, category, concerns, and skin types
     if (terms.length > 0) {
-      query = {
-        $or: [
-          { name: { $regex: terms.join('|'), $options: 'i' } },
-          { category: { $regex: terms.join('|'), $options: 'i' } },
-          { concerns: { $in: terms.map((t) => new RegExp(t, 'i')) } },
-          { skin_types: { $in: terms.map((t) => new RegExp(t, 'i')) } },
-        ],
-      };
+      orConditions.push(
+        { name: { $regex: terms.join('|'), $options: 'i' } },
+        { category: { $regex: terms.join('|'), $options: 'i' } },
+        { concerns: { $in: terms.map((t) => new RegExp(t, 'i')) } },
+        { skin_types: { $in: terms.map((t) => new RegExp(t, 'i')) } }
+      );
+    }
+
+    // Incorporate user profile skin type & concerns for personalized recommendation fallback
+    if (user_profile && user_profile.skin_type) {
+      orConditions.push({ skin_types: new RegExp(user_profile.skin_type, 'i') });
+    }
+    if (user_profile && Array.isArray(user_profile.concerns) && user_profile.concerns.length > 0) {
+      orConditions.push({ concerns: { $in: user_profile.concerns.map((c) => new RegExp(c, 'i')) } });
+    }
+
+    let query = {};
+    if (orConditions.length > 0) {
+      query = { $or: orConditions };
+    }
+
+    // Apply user budget filter if specified
+    if (user_profile && typeof user_profile.budget === 'number' && user_profile.budget > 0) {
+      query.price_inr = { $lte: user_profile.budget };
     }
 
     const products = await Product.find(query).sort({ rating: -1 }).limit(4).lean();
