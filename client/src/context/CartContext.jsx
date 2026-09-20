@@ -130,24 +130,8 @@ function cartReducer(state, action) {
       return { ...state, wishlist: next };
     }
 
-<<<<<<< HEAD
-    case 'PLACE_ORDER': {
-      const items = Object.values(state.cart);
-      if (!items.length) return state;
-      const total = items.reduce((s, { product, qty }) => s + product.price_inr * qty, 0);
-      const order = {
-        id:     `ORD-${Date.now()}`,
-        items,
-        total,
-        date:   new Date().toISOString(),
-        status: 'Processing',
-      };
-      return { ...state, cart: {}, orders: [order, ...state.orders] };
-    }
-=======
     case 'PLACE_ORDER_SUCCESS':
       return { ...state, cart: {} };
->>>>>>> 21d4540 (Implement Joyory loyalty reward coin system)
 
     case 'VIEW_PRODUCT': {
       const pid = action.id;
@@ -177,13 +161,10 @@ export function CartProvider({ children }) {
   }, [state.wishlist]);
 
   useEffect(() => {
-<<<<<<< HEAD
     localStorage.setItem(STORAGE_KEY_ORDERS,  JSON.stringify(state.orders));
   }, [state.orders]);
 
   useEffect(() => {
-=======
->>>>>>> 21d4540 (Implement Joyory loyalty reward coin system)
     localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.history));
   }, [state.history]);
 
