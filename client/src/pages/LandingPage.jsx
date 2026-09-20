@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -8,11 +8,16 @@ import {
   Leaf,
   FlaskConical,
   ShieldCheck,
-  Trash2
+  Trash2,
+  LogOut,
+  Sparkles,
+  Lock,
+  X
 } from 'lucide-react';
 import HeroBottle3D from '../components/HeroBottle3D';
 import LiveSkincareBackground from '../components/LiveSkincareBackground';
 import productsData from '../data/products.json';
+import AuthContext from '../context/AuthContext';
 
 /**
  * Joyory Aura — Scroll-Linked 3D Product Journey
@@ -27,6 +32,14 @@ import productsData from '../data/products.json';
  *    - Stop 4 (Catalog & Bag): Search & Category filters (Left) | Interactive Cart & Checkout (Right)
  */
 export default function LandingPage() {
+  // Authentication & Service Gating Context
+  const auth = useContext(AuthContext);
+  const user = auth?.user || null;
+  const isAuthenticated = auth?.isAuthenticated || false;
+  const requireAuth = auth?.requireAuth || ((reason, cb) => { if (cb) cb(); return true; });
+  const logout = auth?.logout || (() => {});
+  const [showGuestPill, setShowGuestPill] = useState(true);
+
   // Chapter-aware scroll progress (0.0 to 1.0) drives the 3D bottle S-curve.
   const [scrollProgress, setScrollProgress] = useState(0);
   const sectionRefs = useRef({});
@@ -86,32 +99,6 @@ export default function LandingPage() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
-    };
-  }, []);
-
-  // Add a very small parallax response to the studio light on pointer devices.
-  // It updates CSS variables directly so it does not trigger React re-renders.
-  useEffect(() => {
-    if (!window.matchMedia || !window.matchMedia('(pointer: fine)').matches) return undefined;
-
-    let frameId;
-    const handlePointerMove = (event) => {
-      const offsetX = (event.clientX / window.innerWidth - 0.5) * 64;
-      const offsetY = (event.clientY / window.innerHeight - 0.5) * 42;
-
-      window.cancelAnimationFrame(frameId);
-      frameId = window.requestAnimationFrame(() => {
-        document.documentElement.style.setProperty('--ambient-shift-x', `${offsetX}px`);
-        document.documentElement.style.setProperty('--ambient-shift-y', `${offsetY}px`);
-      });
-    };
-
-    window.addEventListener('pointermove', handlePointerMove, { passive: true });
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      window.removeEventListener('pointermove', handlePointerMove);
-      document.documentElement.style.removeProperty('--ambient-shift-x');
-      document.documentElement.style.removeProperty('--ambient-shift-y');
     };
   }, []);
 
@@ -182,8 +169,8 @@ export default function LandingPage() {
 
   return (
     <div className="relative min-h-screen bg-[#F6EFE9] text-[#231E1B] font-sans selection:bg-[#E8633A] selection:text-white">
-      {/* Live Interactive Skincare Canvas Background (Fluid Aura, Bio-Lipid Waves & Cursor Lighting) */}
-      <LiveSkincareBackground scrollProgress={scrollProgress} />
+      {/* Live Animated Aurora Background (CSS GPU-Accelerated — Stable on Scroll) */}
+      <LiveSkincareBackground />
       
       {/* ====================================================================
           STICKY 3D BACKGROUND CANVAS (Moves along S-curve on scroll)
@@ -238,19 +225,56 @@ export default function LandingPage() {
               )}
             </a>
 
-            <Link
-              to="/login"
-              className="text-xs font-bold text-[#665D57] hover:text-[#231E1B] px-3 py-2"
-            >
-              Sign In
-            </Link>
+            {isAuthenticated ? (
+              <div className="flex items-center space-x-2">
+                <Link
+                  to="/dashboard"
+                  className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-white border border-[#EADFD4] text-xs font-bold text-[#231E1B] hover:border-[#E8633A]/60 transition-all shadow-xs"
+                >
+                  <div className="w-5 h-5 rounded-full bg-[#E8633A] text-white text-[10px] flex items-center justify-center font-bold">
+                    {user?.name ? user.name[0].toUpperCase() : 'U'}
+                  </div>
+                  <span className="hidden sm:inline truncate max-w-[90px]">
+                    Hi, {user?.name ? user.name.split(' ')[0] : 'Member'}
+                  </span>
+                </Link>
+                <button
+                  onClick={logout}
+                  title="Sign Out"
+                  className="w-9 h-9 rounded-full bg-white/80 hover:bg-red-50 text-[#665D57] hover:text-red-600 border border-[#EADFD4] hover:border-red-200 flex items-center justify-center transition-all cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Link
+                  to="/login"
+                  className="text-xs font-bold text-[#665D57] hover:text-[#231E1B] px-3 py-2"
+                >
+                  Sign In
+                </Link>
 
-            <a
-              href="#diagnostic"
-              className="px-5 py-2.5 rounded-full bg-[#E8633A] text-white text-xs font-bold hover:bg-[#D4552E] transition-all shadow-md shadow-[#E8633A]/20"
+                <Link
+                  to="/signup"
+                  className="hidden sm:inline-flex px-3.5 py-1.5 rounded-full bg-white border border-[#EADFD4] text-xs font-bold text-[#231E1B] hover:bg-[#F3EBE4] transition-all shadow-2xs"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+
+            <button
+              onClick={() => {
+                requireAuth('take the clinical skin diagnostic quiz and save your personalized formulation score', () => {
+                  const el = document.getElementById('diagnostic');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                });
+              }}
+              className="px-5 py-2.5 rounded-full bg-[#E8633A] text-white text-xs font-bold hover:bg-[#D4552E] transition-all shadow-md shadow-[#E8633A]/20 cursor-pointer"
             >
               Take Quiz
-            </a>
+            </button>
           </div>
         </div>
       </header>
@@ -643,9 +667,11 @@ export default function LandingPage() {
               <button
                 onClick={() => {
                   const dupe = productsData.find((p) => p.id === 'P013');
-                  if (dupe) addToCart(dupe);
+                  if (dupe) {
+                    requireAuth('add clinical dupe formulations to your routine basket', () => addToCart(dupe));
+                  }
                 }}
-                className="w-full py-3 rounded-full bg-[#231E1B] text-white text-xs font-bold hover:bg-[#382F2A] transition-all"
+                className="w-full py-3 rounded-full bg-[#231E1B] text-white text-xs font-bold hover:bg-[#382F2A] transition-all cursor-pointer"
               >
                 Add PureBloom Dupe to Bag (₹599)
               </button>
@@ -788,8 +814,10 @@ export default function LandingPage() {
                     <div className="pt-2 mt-2 border-t border-[#F5EFE9] flex items-center justify-between">
                       <span className="text-xs font-black text-[#231E1B]">₹{p.price_inr}</span>
                       <button
-                        onClick={() => addToCart(p)}
-                        className="px-3 py-1 rounded-full bg-[#E8633A] text-white text-[10px] font-bold hover:bg-[#D4552E]"
+                        onClick={() => {
+                          requireAuth('add active formulations to your routine basket', () => addToCart(p));
+                        }}
+                        className="px-3 py-1 rounded-full bg-[#E8633A] text-white text-[10px] font-bold hover:bg-[#D4552E] cursor-pointer"
                       >
                         + Add
                       </button>
@@ -881,8 +909,12 @@ export default function LandingPage() {
 
               {/* CTA Button */}
               <button
-                onClick={() => alert(`Order placed successfully! Total: ₹${totalAmount}`)}
-                className="w-full py-3.5 rounded-full bg-[#E8633A] text-white text-xs font-bold tracking-wider uppercase hover:bg-[#D4552E] shadow-md shadow-[#E8633A]/20 transition-all hover:scale-102 active:scale-98"
+                onClick={() => {
+                  requireAuth('checkout your personalized routine basket and place an order', () => {
+                    alert(`Order placed successfully! Total: ₹${totalAmount}`);
+                  });
+                }}
+                className="w-full py-3.5 rounded-full bg-[#E8633A] text-white text-xs font-bold tracking-wider uppercase hover:bg-[#D4552E] shadow-md shadow-[#E8633A]/20 transition-all hover:scale-102 active:scale-98 cursor-pointer"
               >
                 Checkout Routine
               </button>
@@ -892,6 +924,35 @@ export default function LandingPage() {
         </section>
 
       </main>
+
+      {/* Floating Guest Alert Banner */}
+      {!isAuthenticated && showGuestPill && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-full max-w-xl px-4 animate-in fade-in slide-in-from-bottom-5 duration-300">
+          <div className="p-3.5 sm:px-5 sm:py-3 rounded-2xl bg-[#231E1B]/95 backdrop-blur-md border border-white/15 text-white shadow-2xl flex items-center justify-between gap-3">
+            <div className="flex items-center space-x-2.5 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#E8633A] animate-pulse shrink-0" />
+              <p className="text-xs text-[#F6EFE9] truncate">
+                <strong className="text-white">Browsing as Guest:</strong> Log in to enjoy personalized AI diagnostics, routine matching & member dupe discounts.
+              </p>
+            </div>
+            <div className="flex items-center space-x-2 shrink-0">
+              <Link
+                to="/login"
+                className="px-3.5 py-1.5 rounded-xl bg-[#E8633A] hover:bg-[#D4552E] text-white text-[11px] font-bold transition-all shadow-xs"
+              >
+                Log In
+              </Link>
+              <button
+                onClick={() => setShowGuestPill(false)}
+                className="text-white/60 hover:text-white text-xs p-1 cursor-pointer"
+                aria-label="Dismiss guest prompt"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ====================================================================
           FOOTER

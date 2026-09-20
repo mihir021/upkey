@@ -6,6 +6,8 @@ import tailwindcss from '@tailwindcss/vite';
 // Vite Configuration for Joyory Client
 // ==============================================================================
 export default defineConfig({
+  // GLB assets are loaded by @react-three/drei at runtime and emitted as files.
+  assetsInclude: ['**/*.glb'],
   plugins: [
     tailwindcss(),
     react()
@@ -14,7 +16,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5001',
         changeOrigin: true,
       },
     },
