@@ -123,7 +123,7 @@ exports.checkout = async (req, res) => {
       discount,
       coinDiscount,
       total,
-      redeemedCoins,
+      redeemCoins,
       earnedCoins,
       status: 'Delivered'
     });
@@ -171,7 +171,7 @@ exports.getOrderHistory = async (req, res) => {
       }))
     }));
     return res.status(200).json(formattedOrders);
-  } catch (err) {
+  } catch (_err) {
     return res.status(500).json({ message: 'Error fetching orders.' });
   }
 };
@@ -181,7 +181,7 @@ exports.getRewardBalance = async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ message: 'User not found.' });
     return res.status(200).json({ coinsBalance: user.coinsBalance });
-  } catch (err) {
+  } catch (_err) {
     return res.status(500).json({ message: 'Error fetching balance.' });
   }
 };
@@ -190,7 +190,7 @@ exports.getRewardHistory = async (req, res) => {
   try {
     const history = await RewardTransaction.find({ userId: req.userId }).sort({ createdAt: -1 });
     return res.status(200).json(history);
-  } catch (err) {
+  } catch (_err) {
     return res.status(500).json({ message: 'Error fetching history.' });
   }
 };

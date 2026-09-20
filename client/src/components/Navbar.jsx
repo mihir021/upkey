@@ -32,6 +32,7 @@ export default function Navbar() {
         .then(res => setCoinBalance(res.data.coinsBalance))
         .catch(console.error);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCoinBalance(null);
     }
   }, [isAuthenticated]);

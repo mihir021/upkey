@@ -47,12 +47,11 @@ function sanitizeStorage() {
   }
 }
 
-<<<<<<< HEAD
 sanitizeStorage();
-=======
+
+// Note: these are left over if they were needed, otherwise not used.
 const storedWish   = loadJSON(STORAGE_KEY_WISH,   null);
 const storedHist   = loadJSON(STORAGE_KEY_HISTORY, null);
->>>>>>> 21d4540 (Implement Joyory loyalty reward coin system)
 
 function loadCleanOrders() {
   const orders = loadJSON(STORAGE_KEY_ORDERS, []);
