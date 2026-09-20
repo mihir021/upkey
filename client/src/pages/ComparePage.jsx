@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Scale,
   ArrowLeft,
@@ -10,6 +11,7 @@ import {
   Trash2,
   SlidersHorizontal,
   Info,
+  CheckCircle2,
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import CompareColumn from '../components/CompareColumn';
@@ -28,10 +30,18 @@ import productsData from '../data/products.json';
  *
  * Includes:
  *   - AI Bio-Equivalence formulation loading calibration transition
+ *   - 1-Product Staging Mode: Dynamic pairing recommendations with 1-click comparison
+ *   - Strict 2-Product Minimum Enforcement for clinical grid
  *   - Product normalization against catalog for fault-tolerant rendering
  *   - Auto-staged URL query param support (?ids=P012,P013)
  *   - Interactive "Show Differences Only" spec filtering
  */
+
+function getProductImg(product) {
+  const cl = product?.cloudinary_link || '';
+  if (!cl || cl.endsWith('.glb') || cl.endsWith('.gltf')) return null;
+  return cl;
+}
 
 export default function ComparePage() {
   const navigate = useNavigate();
@@ -200,8 +210,45 @@ export default function ComparePage() {
     };
   }, [enrichedProducts]);
 
-  // Quick preset loader for demonstration
+  // Dynamic Smart Pairings when exactly 1 product is staged
+  const pairingRecommendations = useMemo(() => {
+    if (enrichedProducts.length !== 1) return [];
+    const staged = enrichedProducts[0];
+    const stagedId = staged.id || staged._id;
+    const stagedCategory = (staged.category || '').toLowerCase();
+
+    // 1. Same category matches
+    let matches = productsData.filter(
+      (p) => p.id !== stagedId && (p.category || '').toLowerCase() === stagedCategory
+    );
+
+    // 2. If fewer than 3, add products targeting shared skin concerns
+    if (matches.length < 3) {
+      const stagedConcerns = new Set(
+        (staged.concerns_list || []).map((c) => c.toLowerCase())
+      );
+      const others = productsData.filter((p) => {
+        if (p.id === stagedId || matches.some((m) => m.id === p.id)) return false;
+        const pConcerns = (p.concerns ? p.concerns.split('|') : []).map((c) => c.toLowerCase());
+        return pConcerns.some((c) => stagedConcerns.has(c));
+      });
+      matches = [...matches, ...others];
+    }
+
+    // 3. Fallback to top-rated items
+    if (matches.length < 3) {
+      const extra = productsData.filter(
+        (p) => p.id !== stagedId && !matches.some((m) => m.id === p.id)
+      );
+      matches = [...matches, ...extra];
+    }
+
+    return matches.slice(0, 3);
+  }, [enrichedProducts]);
+
+  // Quick preset loader for clinical demonstration
   function stagePreset(p1Id, p2Id) {
+    clearCompare();
     const p1 = productsData.find((p) => p.id === p1Id);
     const p2 = productsData.find((p) => p.id === p2Id);
     if (p1) addToCompare(p1);
@@ -281,28 +328,186 @@ export default function ComparePage() {
           </p>
         </div>
 
-        {/* ── Empty State (< 2 Products) ── */}
-        {enrichedProducts.length < 2 ? (
+        {/* ── Dynamic State Handling (< 2 Products) ── */}
+        {enrichedProducts.length === 1 ? (
+          /* ── 1-Product Staging State: Prompt for 2nd Product with Smart Suggestions ── */
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="space-y-8"
+          >
+            {/* Staging Status Card */}
+            <div className="bg-white rounded-3xl border border-[#EDE2D7] p-6 sm:p-8 shadow-sm">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-[#F5EFE9]">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 text-xs font-bold tracking-wide mb-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    Stage 1 of 2 Complete
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-bold font-brand text-[#231E1B]">
+                    Select 1 More Formulation to Compare
+                  </h2>
+                  <p className="text-sm text-[#7A706A] mt-1 max-w-xl">
+                    Side-by-side comparison requires at least 2 products to unlock clinical bio-equivalence and active breakdown metrics.
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate('/shop')}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#E8633A] hover:bg-[#D4552E] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#E8633A]/25 transition-all cursor-pointer shrink-0"
+                >
+                  <Plus className="w-4 h-4" /> Browse Full Catalog
+                </button>
+              </div>
+
+              {/* 2-Slot Staging Visualizer */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 max-w-4xl mx-auto">
+                {/* Slot 1: Currently Staged Product */}
+                <div className="p-5 rounded-2xl bg-[#FAF6F2]/80 border border-[#EADFD4] flex items-center gap-4 relative">
+                  <div className="w-16 h-16 rounded-xl bg-white border border-[#EDE2D7] overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
+                    {getProductImg(enrichedProducts[0]) ? (
+                      <img
+                        src={getProductImg(enrichedProducts[0])}
+                        alt={enrichedProducts[0].name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-base font-bold text-[#E8633A]">
+                        {enrichedProducts[0].brand?.[0] || 'G'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-[#9C8F85]">
+                        {enrichedProducts[0].brand}
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200/60">
+                        <CheckCircle2 className="w-3 h-3" /> Staged
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-bold text-[#231E1B] truncate">
+                      {enrichedProducts[0].name}
+                    </h3>
+                    <p className="text-xs font-bold text-[#E8633A] mt-0.5">
+                      ₹{enrichedProducts[0].price_inr?.toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Slot 2: Empty Waiting Slot */}
+                <div className="p-5 rounded-2xl border-2 border-dashed border-[#E8633A]/40 bg-[#E8633A]/5 flex items-center justify-center text-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-white border border-[#E8633A]/30 flex items-center justify-center text-[#E8633A] shadow-xs shrink-0">
+                    <Plus className="w-5 h-5 stroke-[2.5]" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs font-bold text-[#231E1B]">Slot 2 (Required)</div>
+                    <div className="text-[11px] text-[#7A706A]">
+                      Pick a pairing below to immediately activate side-by-side view
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Smart Pairing Recommendations */}
+            {pairingRecommendations.length > 0 && (
+              <div className="bg-white rounded-3xl border border-[#EDE2D7] p-6 sm:p-8 shadow-sm">
+                <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#E8633A]" />
+                    <h3 className="text-lg font-bold font-brand text-[#231E1B]">
+                      Recommended Pairings in {enrichedProducts[0].category || 'Skincare'}
+                    </h3>
+                  </div>
+                  <span className="text-xs text-[#9C8F85] font-medium">1-click instant comparison activation</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {pairingRecommendations.map((rec) => {
+                    const rImg = getProductImg(rec);
+                    return (
+                      <div
+                        key={rec.id}
+                        className="p-4 rounded-2xl bg-[#FAF6F2]/50 border border-[#EDE2D7] hover:border-[#E8633A]/50 hover:bg-white hover:shadow-md transition-all flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="w-14 h-14 rounded-xl bg-white border border-[#EDE2D7] overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+                              {rImg ? (
+                                <img src={rImg} alt={rec.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-xs font-bold text-[#E8633A]">{rec.brand?.[0]}</span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-[#9C8F85]">
+                                {rec.brand}
+                              </span>
+                              <h4 className="text-xs font-bold text-[#231E1B] line-clamp-2 leading-snug">
+                                {rec.name}
+                              </h4>
+                              <div className="text-xs font-black text-[#E8633A] mt-1">
+                                ₹{rec.price_inr?.toLocaleString('en-IN')}
+                              </div>
+                            </div>
+                          </div>
+
+                          {rec.key_ingredients && (
+                            <div className="text-[10px] text-[#7A706A] mb-3 line-clamp-1 bg-white px-2 py-1 rounded-md border border-[#EDE2D7]/60">
+                              Actives: {rec.key_ingredients.split('|').slice(0, 2).join(', ')}
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => addToCompare(rec)}
+                          className="w-full py-2 rounded-xl bg-[#231E1B] hover:bg-[#E8633A] text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs hover:shadow-[#E8633A]/30 active:scale-95"
+                        >
+                          <Plus className="w-3.5 h-3.5 stroke-[2.2]" />
+                          <span>Compare With This</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Quick Demo Presets */}
+            <div className="p-6 rounded-2xl bg-[#FAF6F2]/80 border border-[#EDE2D7] text-center">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#9C8F85] block mb-3">
+                Or explore popular clinical head-to-head battles:
+              </span>
+              <div className="flex flex-wrap items-center justify-center gap-2.5">
+                <button
+                  onClick={() => stagePreset('P012', 'P013')}
+                  className="px-4 py-2 rounded-2xl bg-white hover:bg-[#EDE2D7] border border-[#EADFD4] text-xs font-bold text-[#231E1B] transition-all cursor-pointer shadow-2xs"
+                >
+                  ⚡ Vitamin C 15% vs Glow Booster Dupe
+                </button>
+                <button
+                  onClick={() => stagePreset('P018', 'P002')}
+                  className="px-4 py-2 rounded-2xl bg-white hover:bg-[#EDE2D7] border border-[#EADFD4] text-xs font-bold text-[#231E1B] transition-all cursor-pointer shadow-2xs"
+                >
+                  🌿 Ceramide Barrier vs Gentle Milk
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ) : enrichedProducts.length === 0 ? (
+          /* Zero Products Staged State */
           <div className="bg-white rounded-3xl border border-[#EDE2D7] p-8 sm:p-14 text-center max-w-2xl mx-auto shadow-sm">
             <div className="w-16 h-16 rounded-3xl bg-[#FAF6F2] border border-[#EADFD4] flex items-center justify-center text-[#E8633A] mx-auto mb-4 shadow-sm">
               <Scale className="w-8 h-8 stroke-[1.8]" />
             </div>
 
             <h2 className="text-2xl font-bold font-brand text-[#231E1B] mb-2">
-              {enrichedProducts.length === 1
-                ? 'Select 1 More Product to Compare'
-                : 'No Products Staged for Comparison'}
+              No Products Staged for Comparison
             </h2>
 
             <p className="text-sm text-[#7A706A] leading-relaxed mb-6 max-w-md mx-auto">
-              {enrichedProducts.length === 1 ? (
-                <>
-                  You have staged <strong>{enrichedProducts[0]?.name}</strong>. Choose another product
-                  from the catalog to see side-by-side active breakdowns and value comparisons.
-                </>
-              ) : (
-                'Select up to 3 products from our catalog to analyze active concentrations, match scores, and cost efficiencies side-by-side.'
-              )}
+              Select at least 2 products (up to 3) from our catalog to analyze active concentrations, match scores, and cost efficiencies side-by-side.
             </p>
 
             <button
