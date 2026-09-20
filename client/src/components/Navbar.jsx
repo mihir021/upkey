@@ -10,8 +10,6 @@ import {
   LogOut,
   ChevronDown,
   Coins,
-  User,
-  Home,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -74,6 +72,7 @@ export default function Navbar() {
         .then(res => setCoinBalance(res.data.coinsBalance))
         .catch(console.error);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCoinBalance(null);
     }
   }, [isAuthenticated]);
