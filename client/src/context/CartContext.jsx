@@ -45,9 +45,12 @@ function sanitizeStorage() {
   } catch {
     // Storage access restricted or disabled
   }
+}
+
 sanitizeStorage();
 
 function loadCleanOrders() {
+  const orders = loadJSON(STORAGE_KEY_ORDERS, []);
   return Array.isArray(orders) ? orders.filter(o => o && !DEMO_ORDER_IDS.has(o.id)) : [];
 }
 
