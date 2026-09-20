@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Mail, Lock, Eye, EyeOff, AlertCircle, Sparkles, ArrowRight, Check, X } from 'lucide-react';
-import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
 
 // ============================================================================
@@ -42,6 +42,7 @@ function RequirementChip({ met, label, touched }) {
 
 function Signup() {
   const navigate = useNavigate();
+  const { signup } = useAuth();
 
   // ---------- state ----------
   const [form, setForm] = useState({ name: '', email: '', password: '' });
@@ -88,11 +89,7 @@ function Signup() {
 
     setLoading(true);
     try {
-      const res = await api.post('/auth/signup', form);
-      localStorage.setItem('token', res.data.token);
-      if (res.data.user) {
-        localStorage.setItem('user', JSON.stringify(res.data.user));
-      }
+      await signup(form);
       navigate('/shop');
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed.');

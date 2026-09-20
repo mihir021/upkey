@@ -7,7 +7,7 @@
 // Python service — all other code goes through this interface.
 // ---------------------------------------------------------------------------
 
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
 
 /**
  * Send a chat message to the AI Shopping Agent running in the Python ML service.

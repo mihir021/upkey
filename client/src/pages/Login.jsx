@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, AlertCircle, Sparkles, ArrowRight } from 'lucide-react';
-import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
 
 // ============================================================================
@@ -10,6 +10,7 @@ import AuthLayout from '../components/AuthLayout';
 // ============================================================================
 function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   // ---------- state ----------
   const [form, setForm] = useState({ email: '', password: '' });
@@ -44,11 +45,7 @@ function Login() {
 
     setLoading(true);
     try {
-      const res = await api.post('/auth/login', form);
-      localStorage.setItem('token', res.data.token);
-      if (res.data.user) {
-        localStorage.setItem('user', JSON.stringify(res.data.user));
-      }
+      await login(form);
       navigate('/shop');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
