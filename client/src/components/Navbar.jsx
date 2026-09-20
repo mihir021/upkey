@@ -1,15 +1,53 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { ShoppingBag, Heart, Search, User, Home, Menu, X, LogOut, ChevronDown } from 'lucide-react';
+import {
+  Leaf,
+  ShoppingBag,
+  Heart,
+  Search,
+  Menu,
+  X,
+  LogOut,
+  ChevronDown,
+} from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 
+/**
+ * ==============================================================================
+ * Navbar Component — Glow More Luxury Editorial Navigation
+ * ==============================================================================
+ *
+ * Implements a balanced, high-contrast, premium three-zone layout:
+ *
+ * Zone 1 (Left):
+ *   - Terracotta leaf icon badge + "Glow More" bold serif headline wordmark.
+ *   - Generous breathing room separating it from the navigation links.
+ *
+ * Zone 2 (Center):
+ *   - Centered navigation links ("Shop", "Explore", "Dashboard", "Wishlist", "Orders").
+ *   - Uniform hit-area and padding (px-4 py-2) across both active and inactive links.
+ *   - Text size text-[15px] and font-semibold for crisp presence and legibility.
+ *   - Active link gets an integrated soft terracotta pill highlight (#E8633A/10).
+ *
+ * Zone 3 (Right):
+ *   - Search Bar: Wider default width (w-60 to w-64) with subtle warm border (#EADFD4).
+ *   - Wishlist & Cart buttons: Circular buttons with hover-lift and orange badges.
+ *   - User Profile Chip: Avatar circle with initials, name, and clean dropdown menu.
+ *   - Generous spacing (gap-4 sm:gap-5) between all right-side elements.
+ *
+ * Architecture & Presence:
+ *   - Full-width sticky bar with h-20 (80px) height for visual authority.
+ *   - Soft bottom border and subtle shadow (shadow-sm) to separate from cream page content.
+ *   - Centered max-w-7xl container with px-8 to px-12 horizontal padding.
+ */
+
 const NAV_LINKS = [
-  { label:'Shop',      to:'/shop' },
-  { label:'Explore',   to:'/explore' },
-  { label:'Dashboard', to:'/dashboard' },
-  { label:'Wishlist',  to:'/wishlist' },
-  { label:'Orders',    to:'/orders' },
+  { label: 'Shop',      to: '/shop' },
+  { label: 'Explore',   to: '/explore' },
+  { label: 'Dashboard', to: '/dashboard' },
+  { label: 'Wishlist',  to: '/wishlist' },
+  { label: 'Orders',    to: '/orders' },
 ];
 
 export default function Navbar() {
@@ -18,16 +56,18 @@ export default function Navbar() {
   const { cartCount, wishCount, clearUserData } = useCart();
   const { user, logout, isAuthenticated } = useAuth();
 
-  const [menuOpen, setMenuOpen]     = useState(false);
+  const [menuOpen, setMenuOpen]       = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [searchVal, setSearchVal]   = useState('');
+  const [searchVal, setSearchVal]     = useState('');
   const searchRef = useRef();
   const profileRef = useRef();
 
-  // close dropdowns on outside click
+  // Close profile dropdown on outside click
   useEffect(() => {
     function handler(e) {
-      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
     }
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -45,269 +85,244 @@ export default function Navbar() {
 
   return (
     <>
-      <nav style={{
-        position:'sticky', top:0, zIndex:200,
-        background:'rgba(253,251,247,0.95)',
-        backdropFilter:'blur(12px)',
-        borderBottom:'1.5px solid #EADFD4',
-        padding:'0 24px',
-        height:64,
-        display:'flex', alignItems:'center', gap:20,
-      }}>
-        {/* Logo */}
-        <Link to="/shop" style={{
-          fontFamily:'"Playfair Display", Georgia, serif',
-          fontSize:22, fontWeight:700, color:'#E8633A',
-          textDecoration:'none', flexShrink:0, letterSpacing:-.3,
-        }}>
-          Glow More
-        </Link>
+      <header className="sticky top-0 z-40 w-full bg-[#FEFCFA]/95 backdrop-blur-md border-b border-[#EADFD4] shadow-sm transition-all duration-200">
+        {/* ── Centered max-w-7xl container with px-8 to px-12 padding & h-20 height ── */}
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 h-20 flex items-center justify-between">
 
-        {/* Desktop nav links */}
-        <div style={{ display:'flex', gap:4, marginLeft:8 }} className="desktop-nav">
-          {NAV_LINKS.map(link => (
-            <Link key={link.to} to={link.to} style={{
-              padding:'6px 14px', borderRadius:20, fontSize:13.5, fontWeight:600,
-              color: isActive(link.to) ? '#E8633A' : '#665D57',
-              background: isActive(link.to) ? '#fde8d8' : 'transparent',
-              textDecoration:'none', transition:'all .15s',
-            }}>
-              {link.label}
+          {/* ==================================================================
+              ZONE 1: BRAND LOGO (Left Anchor with Leaf Icon Badge)
+              ================================================================== */}
+          <div className="flex items-center shrink-0">
+            <Link
+              to="/shop"
+              className="flex items-center gap-3 group text-decoration-none focus:outline-none"
+              aria-label="Glow More Home"
+            >
+              {/* Visual Anchor: Terracotta Gradient Leaf Badge */}
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#E8633A] via-[#E8633A] to-[#D44E28] flex items-center justify-center text-white shadow-md shadow-[#E8633A]/25 transition-transform duration-200 group-hover:scale-105">
+                <Leaf className="w-5 h-5 stroke-[2.2]" />
+              </div>
+
+              {/* Bold Serif Headline Wordmark */}
+              <span className="text-2xl sm:text-[26px] font-bold font-brand tracking-tight text-[#231E1B] leading-none group-hover:text-[#E8633A] transition-colors">
+                Glow More
+              </span>
             </Link>
-          ))}
-        </div>
+          </div>
 
-        {/* Spacer */}
-        <div style={{ flex:1 }} />
+          {/* ==================================================================
+              ZONE 2: PRIMARY NAVIGATION LINKS (Balanced Center Zone)
+              ================================================================== */}
+          <nav
+            className="hidden md:flex items-center gap-1.5 lg:gap-2.5"
+            aria-label="Main Navigation"
+          >
+            {NAV_LINKS.map((link) => {
+              const active = isActive(link.to);
+              return (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={`px-4 py-2 rounded-full text-[15px] font-semibold tracking-tight transition-all duration-200 ${
+                    active
+                      ? 'bg-[#E8633A]/10 text-[#E8633A] font-bold shadow-2xs'
+                      : 'text-[#5C534D] hover:text-[#E8633A] hover:bg-[#FAF6F2]'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
 
-        {/* Search bar */}
-        <form onSubmit={handleSearch} style={{
-          display:'flex', alignItems:'center',
-          background:'#F6EFE9', border:'1.5px solid #EADFD4',
-          borderRadius:24, padding:'6px 14px', gap:8, maxWidth:260, flex:1,
-        }} className="search-bar">
-          <Search size={15} color="#665D57" />
-          <input
-            ref={searchRef}
-            value={searchVal}
-            onChange={e => setSearchVal(e.target.value)}
-            placeholder="Search skincare…"
-            style={{
-              border:'none', background:'transparent', outline:'none',
-              fontSize:13, color:'#231E1B', width:'100%',
-              fontFamily:'inherit',
-            }}
-          />
-        </form>
+          {/* ==================================================================
+              ZONE 3: SEARCH BAR + ACTION ICONS + USER CHIP (Right Side)
+              ================================================================== */}
+          <div className="flex items-center gap-4 lg:gap-5 shrink-0">
 
-        {/* Icons */}
-        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-          {/* Wishlist */}
-          <button onClick={() => navigate('/wishlist')} style={{
-            position:'relative', width:40, height:40, borderRadius:'50%',
-            background:'transparent', border:'none', cursor:'pointer',
-            display:'flex', alignItems:'center', justifyContent:'center',
-          }}>
-            <Heart size={20} color={location.pathname==='/wishlist' ? '#E8633A' : '#665D57'} />
-            {wishCount > 0 && (
-              <span style={{
-                position:'absolute', top:4, right:4,
-                background:'#E8633A', color:'#fff',
-                width:16, height:16, borderRadius:'50%',
-                fontSize:9, fontWeight:700,
-                display:'flex', alignItems:'center', justifyContent:'center',
-              }}>{wishCount}</span>
-            )}
-          </button>
+            {/* ── Search Input: Wider (w-60 to w-64) with crisp border ── */}
+            <form
+              onSubmit={handleSearch}
+              className="hidden sm:flex items-center w-56 lg:w-64 h-10 rounded-full bg-[#F5EFE9] border border-[#EADFD4] px-4 gap-2.5 shadow-2xs focus-within:border-[#E8633A]/60 focus-within:bg-white focus-within:shadow-xs transition-all"
+            >
+              <Search className="w-4 h-4 text-[#8A7D75] shrink-0" />
+              <input
+                ref={searchRef}
+                value={searchVal}
+                onChange={(e) => setSearchVal(e.target.value)}
+                placeholder="Search skincare..."
+                className="w-full bg-transparent text-xs font-medium text-[#231E1B] placeholder:text-[#9C8F85] outline-none"
+              />
+            </form>
 
-          {/* Cart */}
-          <button onClick={() => navigate('/cart')} style={{
-            position:'relative', width:40, height:40, borderRadius:'50%',
-            background: location.pathname==='/cart' ? '#fde8d8' : 'transparent',
-            border:'none', cursor:'pointer',
-            display:'flex', alignItems:'center', justifyContent:'center',
-          }}>
-            <ShoppingBag size={20} color={location.pathname==='/cart' ? '#E8633A' : '#665D57'} />
-            {cartCount > 0 && (
-              <span style={{
-                position:'absolute', top:4, right:4,
-                background:'#E8633A', color:'#fff',
-                width:16, height:16, borderRadius:'50%',
-                fontSize:9, fontWeight:700,
-                display:'flex', alignItems:'center', justifyContent:'center',
-              }}>{cartCount}</span>
-            )}
-          </button>
-
-          {/* Profile Dropdown or Sign In CTA */}
-          {(isAuthenticated && user) ? (
-            <div ref={profileRef} style={{ position:'relative' }}>
-              <button
-                onClick={() => setProfileOpen(p => !p)}
-                style={{
-                  display:'flex', alignItems:'center', gap:8,
-                  padding:'6px 12px 6px 6px', borderRadius:24,
-                  background:'#F6EFE9', border:'1.5px solid #EADFD4',
-                  cursor:'pointer',
-                }}
-                aria-label="Open user menu"
-              >
-                <div style={{
-                  width:28, height:28, borderRadius:'50%',
-                  background:'linear-gradient(135deg,#E8633A,#c94f2a)',
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  color:'#fff', fontWeight:700, fontSize:12,
-                }}>
-                  {user.name?.[0]?.toUpperCase() || 'U'}
-                </div>
-                <span style={{ fontSize:13, fontWeight:600, color:'#231E1B', maxWidth:90, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                  {user.name?.split(' ')[0]}
+            {/* ── Wishlist Icon Button with Counter Badge ── */}
+            <Link
+              to="/wishlist"
+              aria-label="Wishlist"
+              className="relative w-10 h-10 rounded-full bg-white border border-[#EADFD4] flex items-center justify-center text-[#5C534D] hover:text-[#E8633A] hover:border-[#E8633A]/40 shadow-2xs hover:scale-105 transition-all"
+            >
+              <Heart
+                className="w-4 h-4 stroke-[2]"
+                fill={isActive('/wishlist') ? '#E8633A' : 'none'}
+                color={isActive('/wishlist') ? '#E8633A' : 'currentColor'}
+              />
+              {wishCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-[#E8633A] text-white text-[10px] font-bold flex items-center justify-center px-1 shadow-2xs leading-none">
+                  {wishCount}
                 </span>
-                <ChevronDown size={14} color="#665D57" />
-              </button>
+              )}
+            </Link>
 
-              {profileOpen && (
-                <div style={{
-                  position:'absolute', right:0, top:'calc(100% + 8px)',
-                  background:'#fff', border:'1.5px solid #EADFD4',
-                  borderRadius:16, overflow:'hidden',
-                  boxShadow:'0 12px 40px rgba(35,30,27,.14)',
-                  minWidth:190, zIndex:300,
-                }}>
-                  <div style={{ padding: '12px 18px', borderBottom: '1px solid #EADFD4', background: '#FDFBF7' }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#231E1B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {user.name}
+            {/* ── Cart Icon Button with Counter Badge ── */}
+            <Link
+              to="/cart"
+              aria-label="View Shopping Cart"
+              className={`relative w-10 h-10 rounded-full bg-white border border-[#EADFD4] flex items-center justify-center shadow-2xs hover:scale-105 transition-all ${
+                isActive('/cart')
+                  ? 'border-[#E8633A]/60 text-[#E8633A] bg-[#FAF6F2]'
+                  : 'text-[#5C534D] hover:text-[#E8633A] hover:border-[#E8633A]/40'
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4 stroke-[2]" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-[#E8633A] text-white text-[10px] font-bold flex items-center justify-center px-1 shadow-2xs leading-none">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
+            {/* ── User Account Chip with Dropdown ── */}
+            {isAuthenticated && user ? (
+              <div ref={profileRef} className="relative flex items-center">
+                <button
+                  onClick={() => setProfileOpen((p) => !p)}
+                  className="h-10 pl-1.5 pr-3 rounded-full bg-white border border-[#EADFD4] hover:border-[#E8633A]/50 hover:bg-[#FAF6F2] transition-all shadow-2xs cursor-pointer flex items-center gap-2 shrink-0"
+                  aria-expanded={profileOpen}
+                  aria-haspopup="true"
+                >
+                  {/* Avatar circle with initial */}
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#E8633A] to-[#D44E28] text-white text-xs flex items-center justify-center font-bold shadow-2xs shrink-0">
+                    {user.name?.[0]?.toUpperCase() || 'U'}
+                  </div>
+
+                  {/* User Name */}
+                  <span className="hidden sm:inline text-xs font-bold text-[#231E1B] truncate max-w-[85px]">
+                    {user.name?.split(' ')[0]}
+                  </span>
+
+                  {/* Rotating Chevron */}
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-[#7A706A] transition-transform duration-200 shrink-0 ${
+                      profileOpen ? 'rotate-180 text-[#E8633A]' : ''
+                    }`}
+                  />
+                </button>
+
+                {/* Account Dropdown Popover */}
+                {profileOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl bg-white border border-[#EADFD4] shadow-xl shadow-[#231E1B]/10 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 divide-y divide-[#F5EFE9]">
+                    <div className="px-4 py-2.5">
+                      <div className="text-xs font-bold text-[#231E1B] truncate">
+                        {user.name}
+                      </div>
+                      <div className="text-[11px] text-[#8A7D75] truncate mt-0.5">
+                        {user.email}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 11, color: '#665D57', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {user.email}
+
+                    <div className="py-1">
+                      {[
+                        { label: 'User Profile', to: '/profile' },
+                        { label: 'Dashboard',    to: '/dashboard' },
+                        { label: 'My Orders',    to: '/orders' },
+                      ].map((item) => (
+                        <button
+                          key={item.to}
+                          onClick={() => {
+                            navigate(item.to);
+                            setProfileOpen(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-xs font-semibold text-[#231E1B] hover:bg-[#FAF6F2] hover:text-[#E8633A] transition-colors cursor-pointer"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="pt-1">
+                      <button
+                        onClick={() => {
+                          clearUserData();
+                          logout();
+                          navigate('/');
+                          setProfileOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[#C94F2A] hover:bg-red-50 transition-colors cursor-pointer"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sign out</span>
+                      </button>
                     </div>
                   </div>
-                  {[
-                    { label:'User Profile', to:'/profile' },
-                    { label:'Dashboard',    to:'/dashboard' },
-                    { label:'My Orders',    to:'/orders' },
-                  ].map(item => (
-                    <button key={item.to} onClick={() => { navigate(item.to); setProfileOpen(false); }}
-                      style={{
-                        display:'block', width:'100%', padding:'11px 18px',
-                        background:'transparent', border:'none', cursor:'pointer',
-                        textAlign:'left', fontSize:13.5, fontWeight:600, color:'#231E1B',
-                        transition:'background .15s',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background='#F6EFE9'}
-                      onMouseLeave={e => e.currentTarget.style.background='transparent'}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                  <hr style={{ margin:0, border:'none', borderTop:'1px solid #EADFD4' }} />
-                  <button onClick={() => { clearUserData(); logout(); navigate('/'); setProfileOpen(false); }}
-                    style={{
-                      display:'flex', alignItems:'center', gap:10, width:'100%',
-                      padding:'12px 18px', background:'transparent', border:'none',
-                      cursor:'pointer', fontSize:13.5, fontWeight:600, color:'#c94f2a',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background='#fde8d8'}
-                    onMouseLeave={e => e.currentTarget.style.background='transparent'}
-                  >
-                    <LogOut size={14} /> Sign out
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <button onClick={() => navigate('/login')} style={{
-              padding:'7px 18px', background:'#E8633A', color:'#fff',
-              border:'none', borderRadius:20, fontSize:13, fontWeight:700,
-              cursor:'pointer',
-            }}>
-              Sign In
-            </button>
-          )}
-
-          {/* Mobile hamburger */}
-          <button
-            className="hamburger"
-            onClick={() => setMenuOpen(p => !p)}
-            style={{
-              display:'none', width:36, height:36, borderRadius:'50%',
-              background:'transparent', border:'none', cursor:'pointer',
-              alignItems:'center', justifyContent:'center',
-            }}
-          >
-            {menuOpen ? <X size={20} color="#231E1B" /> : <Menu size={20} color="#231E1B" />}
-          </button>
-        </div>
-      </nav>
-
-      {/* Mobile slide-down menu */}
-      {menuOpen && (
-        <div style={{
-          position:'fixed', top:64, left:0, right:0, bottom:0,
-          background:'rgba(253,251,247,0.98)', zIndex:190,
-          padding:24, display:'flex', flexDirection:'column', gap:8,
-        }} className="mobile-menu">
-          {NAV_LINKS.map(link => (
-            <button key={link.to} onClick={() => { navigate(link.to); setMenuOpen(false); }}
-              style={{
-                padding:'14px 18px', background: isActive(link.to) ? '#fde8d8' : 'transparent',
-                border:'1.5px solid #EADFD4', borderRadius:12,
-                color: isActive(link.to) ? '#E8633A' : '#231E1B',
-                fontSize:16, fontWeight:600, cursor:'pointer', textAlign:'left',
-              }}
-            >
-              {link.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Mobile bottom tab bar */}
-      <div className="bottom-tab" style={{
-        display:'none', position:'fixed', bottom:0, left:0, right:0,
-        background:'rgba(253,251,247,0.97)', borderTop:'1.5px solid #EADFD4',
-        padding:'8px 0 env(safe-area-inset-bottom)',
-        justifyContent:'space-around', zIndex:200,
-        backdropFilter:'blur(12px)',
-      }}>
-        {[
-          { icon:<Home size={22}/>, label:'Home', to:'/shop' },
-          { icon:<Search size={22}/>, label:'Search', to:'/explore' },
-          { icon:<Heart size={22}/>, label:'Wishlist', to:'/wishlist', badge: wishCount },
-          { icon:<ShoppingBag size={22}/>, label:'Cart', to:'/cart', badge: cartCount },
-          { icon:<User size={22}/>, label:'Profile', to:'/profile' },
-        ].map(tab => (
-          <button key={tab.to} onClick={() => navigate(tab.to)}
-            style={{
-              display:'flex', flexDirection:'column', alignItems:'center', gap:2,
-              background:'transparent', border:'none', cursor:'pointer',
-              position:'relative', padding:'0 12px',
-              color: isActive(tab.to) ? '#E8633A' : '#665D57',
-            }}
-          >
-            {tab.icon}
-            <span style={{ fontSize:9, fontWeight:600 }}>{tab.label}</span>
-            {tab.badge > 0 && (
-              <span style={{
-                position:'absolute', top:0, right:6,
-                background:'#E8633A', color:'#fff',
-                width:14, height:14, borderRadius:'50%',
-                fontSize:8, fontWeight:700,
-                display:'flex', alignItems:'center', justifyContent:'center',
-              }}>{tab.badge}</span>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => navigate('/login')}
+                className="h-10 px-5 rounded-full bg-[#E8633A] text-white text-xs font-bold hover:bg-[#D4552E] shadow-sm shadow-[#E8633A]/25 transition-all cursor-pointer"
+              >
+                Sign In
+              </button>
             )}
-          </button>
-        ))}
-      </div>
 
-      <style>{`
-        @media(max-width:768px){
-          .desktop-nav { display:none !important; }
-          .search-bar  { display:none !important; }
-          .hamburger   { display:flex !important; }
-          .bottom-tab  { display:flex !important; }
-        }
-      `}</style>
+            {/* Mobile Hamburger Toggle Button */}
+            <button
+              onClick={() => setMenuOpen((p) => !p)}
+              className="md:hidden h-10 w-10 rounded-full bg-white border border-[#EADFD4] flex items-center justify-center text-[#231E1B] shadow-2xs hover:bg-[#FAF6F2] cursor-pointer shrink-0"
+              aria-label="Toggle mobile menu"
+            >
+              {menuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Mobile Collapsible Menu ── */}
+        {menuOpen && (
+          <div className="md:hidden bg-[#FEFCFA] border-b border-[#EADFD4] px-6 pb-4 animate-in slide-in-from-top-2 duration-200">
+            <form onSubmit={handleSearch} className="py-3 border-b border-[#EADFD4] mb-2">
+              <div className="flex items-center h-10 rounded-full bg-[#F5EFE9] border border-[#EADFD4] px-3.5 gap-2">
+                <Search className="w-4 h-4 text-[#8A7D75] shrink-0" />
+                <input
+                  value={searchVal}
+                  onChange={(e) => setSearchVal(e.target.value)}
+                  placeholder="Search skincare..."
+                  className="flex-1 bg-transparent text-xs text-[#231E1B] placeholder:text-[#9C8F85] outline-none"
+                />
+              </div>
+            </form>
+
+            <div className="space-y-1">
+              {NAV_LINKS.map((link) => {
+                const active = isActive(link.to);
+                return (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    onClick={() => setMenuOpen(false)}
+                    className={`flex items-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      active
+                        ? 'bg-[#E8633A]/10 text-[#E8633A]'
+                        : 'text-[#231E1B] hover:bg-[#FAF6F2]'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </header>
     </>
   );
 }

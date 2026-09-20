@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Sparkles, TrendingUp, Zap } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
+import LiveSkincareBackground from '../components/LiveSkincareBackground';
+import FloatingIngredients from '../components/FloatingIngredients';
 import api from '../api/axios';
 
 const CATEGORIES = ['All','Cleanser','Toner','Serum','Moisturizer','Sunscreen',
@@ -75,10 +77,18 @@ export default function ShopPage() {
   const banner = BANNERS[bannerIdx];
 
   return (
-    <div style={{ minHeight:'100vh', background:'#FDFBF7', fontFamily:'"Inter",sans-serif' }}>
-      <Navbar />
+    <div className="relative min-h-screen text-[#231E1B] font-sans selection:bg-[#E8633A] selection:text-white overflow-x-hidden">
+      {/* ── Live Skincare Animated Aurora Background (GPU-accelerated) ── */}
+      <LiveSkincareBackground />
 
-      <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 20px 100px' }}>
+      {/* ── Animated Floating Active Ingredients Layer ── */}
+      <FloatingIngredients section="catalog" />
+
+      {/* ── Page Content Layer (z-10 ensures full interactivity) ── */}
+      <div className="relative z-10">
+        <Navbar />
+
+        <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 20px 100px' }}>
 
         {/* Hero Banner */}
         <div style={{
@@ -261,6 +271,7 @@ export default function ShopPage() {
           ))}
         </div>
       </div>
+    </div>
 
       <style>{`
         @keyframes shimmer {

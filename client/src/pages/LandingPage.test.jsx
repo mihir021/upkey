@@ -24,7 +24,7 @@ describe('LandingPage Component', () => {
 
     // Verify Brand Logo & Navigation
     expect(screen.getByText('Glow More')).toBeInTheDocument();
-    expect(screen.getByText('Sign In')).toBeInTheDocument();
+    expect(screen.getByText('Login')).toBeInTheDocument();
 
     // Verify 3D Bottle Canvas container is present
     expect(screen.getByTestId('mock-3d-bottle')).toBeInTheDocument();
