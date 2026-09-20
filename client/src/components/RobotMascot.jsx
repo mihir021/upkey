@@ -115,7 +115,7 @@ export default function RobotMascot({ onClick, pulse = false, id = 'ai-chat-fab'
       whileHover={{ scale: 1.08 }}
       whileTap={{ scale: 0.94 }}
       transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-      aria-label="Chat with Joyory AI Robot Advisor"
+      aria-label="Chat with Glow More AI Robot Advisor"
       title="Chat with AI Beauty Advisor"
       style={{
         position: 'fixed',

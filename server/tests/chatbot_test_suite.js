@@ -45,7 +45,7 @@ async function sendChat(payload) {
 
 async function runTests() {
   console.log('================================================================');
-  console.log('🤖 Starting Joyory AI Chatbot Comprehensive Test Suite');
+  console.log('🤖 Starting Glow More AI Chatbot Comprehensive Test Suite');
   console.log(`🌐 Target Server: ${SERVER_URL}`);
   console.log('================================================================\n');
 

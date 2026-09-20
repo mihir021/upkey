@@ -179,7 +179,7 @@ function AiThinkingIndicator() {
                 ))}
               </div>
               <span style={{ fontSize: 10, fontWeight: 700, color: '#E8633A', letterSpacing: .6, textTransform: 'uppercase' }}>
-                Joyory AI Engine
+                Glow More AI Engine
               </span>
             </div>
 
@@ -378,7 +378,7 @@ export default function AiChatWidget() {
               <Sparkles size={18} color="#fff" />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ color: '#fff', fontWeight: 700, fontSize: 15, letterSpacing: -.2 }}>Joyory AI Assistant</div>
+              <div style={{ color: '#fff', fontWeight: 700, fontSize: 15, letterSpacing: -.2 }}>Glow More AI Assistant</div>
               <div style={{ color: 'rgba(255,255,255,.75)', fontSize: 11, fontWeight: 500 }}>Skincare • Shopping • Routines</div>
             </div>
             <button
@@ -413,7 +413,7 @@ export default function AiChatWidget() {
                   <Sparkles size={26} color="#E8633A" />
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <p style={{ fontWeight: 700, fontSize: 15, color: '#231E1B', margin: '0 0 4px' }}>Hi! I&apos;m your AI beauty advisor</p>
+                  <p style={{ fontWeight: 700, fontSize: 15, color: '#231E1B', margin: '0 0 4px' }}>Hi! I&apos;m Glow More AI</p>
                   <p style={{ fontSize: 12, color: '#665D57', margin: 0, lineHeight: 1.5 }}>
                     Ask me to recommend products, compare items,<br />build routines, or find budget-friendly dupes.
                   </p>

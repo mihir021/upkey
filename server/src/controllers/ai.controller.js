@@ -67,7 +67,7 @@ async function handleLocalFallback(message, user_profile) {
     const gentleProducts = await Product.find(query).sort({ rating: -1 }).limit(3).lean();
 
     return {
-      message: "Important Note: I am Joyory's AI beauty advisor and cannot diagnose or prescribe medical treatments. For skin infections, severe conditions, or medical concerns, please consult a qualified dermatologist or physician.\n\nFor gentle, daily barrier maintenance on sensitive skin, here are calming formulas from our catalog:",
+      message: "Note: I am Glow More AI and cannot diagnose or prescribe medical treatments for severe conditions or infections. Please consult a dermatologist for clinical advice.\n\nHere are gentle, barrier-supporting formulas from our catalog:",
       intent: 'SAFETY_DISCLAIMER',
       tools_used: ['clinical_guardrail'],
       result: {
@@ -88,7 +88,7 @@ async function handleLocalFallback(message, user_profile) {
   const isGreeting = /^(hi|hello|hey|hii+|hola|howdy|good\s*(morning|afternoon|evening)|yo|sup|greetings)\b/i.test(cleanMsg);
   if (isGreeting) {
     return {
-      message: "Hey there! 👋 I'm your Joyory beauty advisor. I can help you find skincare products, build routines, compare items, or discover budget-friendly dupes. What are you looking for?",
+      message: "Hey there! 👋 I'm Glow More AI, your smart beauty advisor. I can help you find products, build routines, compare formulas, or find budget dupes. What are you looking for today?",
       intent: 'GREETING',
       tools_used: [],
       result: { greeting: true },
@@ -301,23 +301,23 @@ async function handleGeminiChat(message, user_profile, product_id, conversation_
     : '';
 
   // 3. Grounding System Instructions for the AI Skincare Advisor
-  const systemInstructionText = `You are Joyory's expert AI Skincare & Beauty Advisor.
-You give warm, dermatologically grounded, empathetic advice and recommend suitable skincare products.
+  const systemInstructionText = `You are Glow More AI (Glow More's smart AI Skincare & Beauty Advisor).
+You give warm, friendly, dermatologically grounded, and highly concise skincare advice.
 
-Joyory Verified Product Catalog:
+Glow More Verified Product Catalog:
 ${catalogSummary}
 
 User Skin Profile:
 ${profileText}
 
-Instructions:
-1. Ground your recommendations strictly in the Joyory Product Catalog above.
-2. Whenever you recommend or reference a product, mention its exact name and ID in brackets (e.g. [P004] Bare Essentials Micellar Cleansing Water) and state its price in INR (₹).
-3. If the user asks about routines, recommend a step-by-step routine (Cleanser -> Toner -> Serum -> Moisturizer -> Sunscreen) using catalog products where possible.
-4. If the user asks general skincare questions (e.g. "how to treat acne", "what causes dry skin"), explain clearly and recommend targeted ingredients and products from the catalog.
-5. Format your response cleanly using markdown (bullet points, bold text, headings).
-6. Keep recommendations tailored to their skin type and budget.${budgetRule}
-8. If the user asks about severe medical skin conditions or infections, state that you are a beauty advisor and advise consulting a dermatologist or doctor, while suggesting gentle barrier-supportive products.`;
+CRITICAL RULES FOR RESPONSES:
+1. BREVITY & SIMPLICITY (TOP PRIORITY): The user needs a simple, concise answer. Keep your text response short, direct, and under 3–4 sentences or brief bullet points (max 50–70 words total). Never output long essays, conversational preambles, or walls of text.
+2. RECOMMENDATIONS: Mention 2 to 4 recommended products with their name, ID in brackets like [P004], and price in ₹ (e.g. [P004] Bare Essentials Micellar Cleansing Water - ₹399).
+3. DO NOT WRITE LENGTHY PRODUCT DESCRIPTIONS: Interactive product cards with photos, prices, and direct add-to-cart buttons are automatically displayed right below your message in the chat widget. Let the product cards speak for themselves!
+4. ROUTINES: If asked for a routine, provide a simple, clean 3-4 step list (e.g. Cleanser -> Serum -> Moisturizer -> Sunscreen) with product IDs in brackets.
+5. STRICT CATALOG GROUNDING: Ground recommendations strictly in the Glow More Product Catalog above. Never invent products.${budgetRule}
+6. MEDICAL GUARDRAIL: If asked about severe infections or medical skin conditions, state in one brief sentence that you are an AI beauty advisor and advise consulting a dermatologist, while suggesting gentle barrier-supportive items.
+7. NO FLUFF: Skip repetitive greetings, introductory fillers, and long disclaimers. Answer directly!`;
 
   // 4. Build contents array including conversation history for multi-turn context
   const contents = [];
@@ -345,8 +345,8 @@ Instructions:
       parts: [{ text: systemInstructionText }]
     },
     generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 1000,
+      temperature: 0.65,
+      maxOutputTokens: 350,
     }
   };
 
