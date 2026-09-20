@@ -82,7 +82,7 @@ export default function Dashboard() {
               {user?.name || 'Welcome back'}
             </h1>
             <p style={{ margin:0, color:'rgba(255,255,255,.55)', fontSize:13 }}>
-              Your Joyory skincare journey
+              Your Glow More skincare journey
             </p>
           </div>
           <div style={{ display:'flex', gap:12 }}>

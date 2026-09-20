@@ -1,18 +1,23 @@
 @import "tailwindcss";
 
 /* ==============================================================================
-   Joyory Warm Terracotta & Cream Theme — Design Tokens
+   Glow More Luxury Editorial Theme — Typography & Design Tokens
+   - Body: Clean, neutral Inter / Plus Jakarta Sans for crisp readability
+   - Headlines: Confident, modern Fraunces serif-sans hybrid with tight letter-spacing
+   - Palette: Preserves warm terracotta (#E8633A), deep obsidian (#231E1B), cream (#F6EFE9)
    ============================================================================== */
 @layer base {
   body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: #F6EFE9;
     color: #231E1B;
     overflow-x: hidden;
   }
 
-  h1, h2, h3, .font-brand {
-    font-family: 'Outfit', sans-serif;
+  /* Confident modern serif-sans hybrid with bold weight and tighter tracking */
+  h1, h2, h3, h4, .font-brand {
+    font-family: 'Fraunces', Georgia, serif;
+    letter-spacing: -0.025em;
   }
 }
 

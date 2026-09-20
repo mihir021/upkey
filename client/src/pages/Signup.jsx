@@ -106,7 +106,7 @@ function Signup() {
         <div className="mb-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8633A]/10 text-[#E8633A] text-[11px] font-bold uppercase tracking-wider mb-2">
             <Sparkles className="w-3 h-3" />
-            <span>Join Joyory Aura</span>
+            <span>Join Glow More</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold font-brand text-[#231E1B] tracking-tight">
             Sign Up

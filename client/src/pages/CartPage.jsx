@@ -4,7 +4,7 @@ import { Trash2, Heart, ShoppingBag, Tag, CheckCircle, ArrowLeft } from 'lucide-
 import Navbar from '../components/Navbar';
 import { useCart } from '../context/CartContext';
 
-const PROMO_CODES = { JOYORY10:'10', GLOW20:'20', FIRST15:'15' };
+const PROMO_CODES = { GLOWMORE10:'10', GLOW20:'20', FIRST15:'15', JOYORY10:'10' };
 
 function imgSrc(p) {
   const cl = p?.cloudinary_link || '';
@@ -57,7 +57,7 @@ export default function CartPage() {
           Order Placed! 🎉
         </h1>
         <p style={{ color:'#665D57', fontSize:15, lineHeight:1.7, margin:'0 0 32px' }}>
-          Your order has been successfully placed. Thank you for shopping at Joyory!
+          Your order has been successfully placed. Thank you for shopping at Glow More!
         </p>
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <button onClick={() => navigate('/orders')} style={{
@@ -86,7 +86,7 @@ export default function CartPage() {
           Your cart is empty
         </h2>
         <p style={{ color:'#665D57', fontSize:14, margin:'0 0 28px' }}>
-          Add some Joyory favourites to get started!
+          Add some Glow More favourites to get started!
         </p>
         <button onClick={() => navigate('/shop')} style={{
           padding:'12px 36px', background:'#E8633A', color:'#fff',
@@ -208,7 +208,7 @@ export default function CartPage() {
               {promoError && (
                 <p style={{ margin:'6px 0 0', fontSize:12, color:'#c94f2a', fontWeight:600 }}>{promoError}</p>
               )}
-              <p style={{ margin:'8px 0 0', fontSize:11, color:'#665D57' }}>Try: JOYORY10 · GLOW20 · FIRST15</p>
+              <p style={{ margin:'8px 0 0', fontSize:11, color:'#665D57' }}>Try: GLOWMORE10 · GLOW20 · FIRST15</p>
             </div>
 
             {/* Line items */}

@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import AuthGateModal from './components/AuthGateModal';
 import AiChatWidget  from './components/AiChatWidget';
+import LoadingScreen from './components/LoadingScreen';
 import LandingPage    from './pages/LandingPage.jsx';
 import Signup         from './pages/Signup.jsx';
 import Login          from './pages/Login.jsx';
@@ -23,8 +25,15 @@ function ProtectedRoute({ children }) {
 }
 
 function App() {
+  // Global initial app mount loading screen state
+  const [initialLoading, setInitialLoading] = useState(true);
+
   return (
     <BrowserRouter>
+      {/* Global Formulation Engine Calibration Loading Screen */}
+      {initialLoading && (
+        <LoadingScreen onComplete={() => setInitialLoading(false)} />
+      )}
       <AuthProvider>
         <CartProvider>
           <AuthGateModal />

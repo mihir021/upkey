@@ -2,14 +2,22 @@ import { createContext, useContext, useReducer, useEffect, useCallback } from 'r
 
 const CartContext = createContext(null);
 
-const STORAGE_KEY_CART    = 'joyory_cart';
-const STORAGE_KEY_WISH    = 'joyory_wishlist';
-const STORAGE_KEY_ORDERS  = 'joyory_orders';
-const STORAGE_KEY_HISTORY = 'joyory_history'; // recently viewed
+const STORAGE_KEY_CART    = 'glowmore_cart';
+const STORAGE_KEY_WISH    = 'glowmore_wishlist';
+const STORAGE_KEY_ORDERS  = 'glowmore_orders';
+const STORAGE_KEY_HISTORY = 'glowmore_history'; // recently viewed
 
 function loadJSON(key, fallback) {
-  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
-  catch { return fallback; }
+  try {
+    const primary = localStorage.getItem(key);
+    if (primary !== null) return JSON.parse(primary);
+    // Legacy fallback check
+    const legacyKey = key.replace('glowmore_', 'joyory_');
+    const legacy = localStorage.getItem(legacyKey);
+    return legacy !== null ? JSON.parse(legacy) : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 const DEFAULT_DEMO_ORDERS = [

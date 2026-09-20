@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 // ==============================================================================
-// Vite Configuration for Joyory Client
+// Vite Configuration for Glow More Client
 // ==============================================================================
 export default defineConfig({
   // GLB assets are loaded by @react-three/drei at runtime and emitted as files.

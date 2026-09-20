@@ -15,7 +15,7 @@ vi.mock('../components/HeroBottle3D', () => ({
 }));
 
 describe('LandingPage Component', () => {
-  it('renders Joyory Aura brand title and all 4 scroll chapters', () => {
+  it('renders Glow More brand title and all 4 scroll chapters', () => {
     render(
       <MemoryRouter>
         <LandingPage />
@@ -23,8 +23,8 @@ describe('LandingPage Component', () => {
     );
 
     // Verify Brand Logo & Navigation
-    expect(screen.getByText('Joyory Aura')).toBeInTheDocument();
-    expect(screen.getByText('Explainable Beauty AI')).toBeInTheDocument();
+    expect(screen.getByText('Glow More')).toBeInTheDocument();
+    expect(screen.getByText('Login')).toBeInTheDocument();
 
     // Verify 3D Bottle Canvas container is present
     expect(screen.getByTestId('mock-3d-bottle')).toBeInTheDocument();
@@ -34,16 +34,24 @@ describe('LandingPage Component', () => {
     expect(screen.getByText(/Fits Your Skin/i)).toBeInTheDocument();
     expect(screen.getByText(/Formulation Match Rating/i)).toBeInTheDocument();
 
+    // Verify Chapter 1: Ambient floating ingredients background layer
+    const heroSection = document.getElementById('hero');
+    expect(heroSection).toBeInTheDocument();
+    expect(heroSection.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
+
     // Verify Chapter 2: Diagnostic (Left) & Visible reason tags (Right)
-    expect(screen.getByText(/Interactive Skin Diagnostic/i)).toBeInTheDocument();
-    expect(screen.getByText(/Visible Algorithmic Reasons/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Your Skin, Decoded/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/STEP 01 · DIAGNOSTIC/i).length).toBeGreaterThanOrEqual(1);
 
     // Verify Chapter 3: Dupe Engine (Left) & Transparent trade-offs (Right)
-    expect(screen.getByText(/Save 68% On Equivalent Actives/i)).toBeInTheDocument();
-    expect(screen.getByText(/Transparent Trade-Off Breakdown/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Same Actives\. Real Savings\./i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/STEP 03 · SMART DUPE FINDER/i).length).toBeGreaterThanOrEqual(1);
 
     // Verify Chapter 4: Catalog Search (Left) & Routine Basket (Right)
-    expect(screen.getByText(/Browse Active Formulations/i)).toBeInTheDocument();
+    expect(screen.getByText(/Every Formula, Fully Transparent/i)).toBeInTheDocument();
     expect(screen.getByText(/Your Routine Basket/i)).toBeInTheDocument();
+
+    // Verify the floating "Browsing as Guest" notification banner is completely absent
+    expect(screen.queryByText(/Browsing as Guest/i)).not.toBeInTheDocument();
   });
 });

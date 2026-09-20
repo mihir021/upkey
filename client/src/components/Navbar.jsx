@@ -60,7 +60,7 @@ export default function Navbar() {
           fontSize:22, fontWeight:700, color:'#E8633A',
           textDecoration:'none', flexShrink:0, letterSpacing:-.3,
         }}>
-          Joyory
+          Glow More
         </Link>
 
         {/* Desktop nav links */}

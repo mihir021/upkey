@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
   });
 
   const [gateModalOpen, setGateModalOpen] = useState(false);
-  const [gateReason, setGateReason] = useState('enjoy Joyory services');
+  const [gateReason, setGateReason] = useState('enjoy Glow More services');
 
   // Listen for unauthorized 401 events to log out cleanly
   useEffect(() => {
@@ -90,7 +90,7 @@ export function AuthProvider({ children }) {
   }
 
   // Service gating helper: if user is not logged in, opens the gate modal and returns false
-  function requireAuth(reason = 'enjoy Joyory services', onAuthorized) {
+  function requireAuth(reason = 'enjoy Glow More services', onAuthorized) {
     if (!token || !user) {
       setGateReason(reason);
       setGateModalOpen(true);
@@ -102,7 +102,7 @@ export function AuthProvider({ children }) {
     return true;
   }
 
-  function openGate(reason = 'enjoy Joyory services') {
+  function openGate(reason = 'enjoy Glow More services') {
     setGateReason(reason);
     setGateModalOpen(true);
   }

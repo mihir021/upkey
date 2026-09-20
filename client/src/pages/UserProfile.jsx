@@ -140,7 +140,7 @@ export default function UserProfile() {
           </div>
           <div style={{ flex:1 }}>
             <h1 style={{ margin:'0 0 4px', color:'#fff', fontFamily:'"Playfair Display",serif', fontSize:26, fontWeight:800 }}>
-              {user?.name || 'Joyory Member'}
+              {user?.name || 'Glow More Member'}
             </h1>
             <p style={{ margin:'0 0 8px', color:'rgba(255,255,255,.8)', fontSize:14 }}>{user?.email}</p>
             <p style={{ margin:0, color:'rgba(255,255,255,.65)', fontSize:12 }}>Member since {joinDate}</p>

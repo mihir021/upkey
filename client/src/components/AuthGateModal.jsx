@@ -54,16 +54,16 @@ export default function AuthGateModal() {
             </div>
             <div>
               <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#E8633A] bg-[#E8633A]/10 px-2.5 py-0.5 rounded-full">
-                Member Service Gate
+                Account Required
               </span>
               <h3 className="text-xl font-bold font-brand text-[#231E1B] mt-0.5">
-                First Log In to Enjoy Services
+                Log In or Sign Up to Continue
               </h3>
             </div>
           </div>
 
           <p className="text-sm text-[#665D57] mb-6 leading-relaxed">
-            To <span className="font-semibold text-[#231E1B]">{gateReason}</span>, please log in to your Joyory account or create a free membership.
+            To <span className="font-semibold text-[#231E1B]">{gateReason}</span>, please log in to your Glow More account or create a free membership.
           </p>
 
           {/* Value Perks List */}
@@ -105,26 +105,17 @@ export default function AuthGateModal() {
               onClick={() => handleGoAuth('login')}
               className="flex-1 py-3 px-5 rounded-2xl bg-[#E8633A] text-white text-xs font-bold shadow-md shadow-[#E8633A]/25 hover:bg-[#D4552E] transition-all flex items-center justify-center space-x-2 cursor-pointer"
             >
-              <span>Log In to Joyory</span>
+              <span>Log In</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={() => handleGoAuth('signup')}
               className="flex-1 py-3 px-5 rounded-2xl bg-white border border-[#EADFD4] text-[#231E1B] text-xs font-bold hover:bg-[#F3EBE4] transition-all flex items-center justify-center space-x-2 cursor-pointer"
             >
-              <span>Create Free Account</span>
+              <span>Sign Up / Create Account</span>
             </button>
           </div>
 
-          {/* Dismiss option */}
-          <div className="mt-4 text-center">
-            <button
-              onClick={closeGate}
-              className="text-xs text-[#8F8278] hover:text-[#231E1B] transition-colors cursor-pointer"
-            >
-              Continue Browsing as Guest
-            </button>
-          </div>
         </motion.div>
       </div>
     </AnimatePresence>
