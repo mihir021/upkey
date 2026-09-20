@@ -6,6 +6,7 @@ const orderItemSchema = new mongoose.Schema({
   price_inr: { type: Number, required: true },
   name: { type: String, required: true },
   brand: { type: String },
+  category: { type: String },
   cloudinary_link: { type: String }
 }, { _id: false });
 

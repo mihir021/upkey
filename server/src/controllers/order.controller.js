@@ -56,6 +56,7 @@ exports.checkout = async (req, res) => {
         price_inr: price,
         name: product.name,
         brand: product.brand,
+        category: product.category,
         cloudinary_link: product.cloudinary_link
       });
     }
@@ -169,6 +170,7 @@ exports.getOrderHistory = async (req, res) => {
           id: i.productId,
           name: i.name,
           brand: i.brand,
+          category: i.category,
           price_inr: i.price_inr,
           cloudinary_link: i.cloudinary_link
         }

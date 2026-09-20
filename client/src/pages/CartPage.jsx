@@ -282,12 +282,12 @@ export default function CartPage() {
                   <Tag size={14} color="#665D57" />
                   <input value={promo} onChange={e => { setPromo(e.target.value); setPromoError(''); }}
                     placeholder="Promo code"
-                    style={{ border:'none', background:'transparent', outline:'none', fontSize:13, fontFamily:'inherit', flex:1 }}
+                    style={{ border:'none', background:'transparent', outline:'none', fontSize:13, fontFamily:'inherit', flex:1, minWidth:0 }}
                   />
                 </div>
                 <button onClick={applyPromo} style={{
                   padding:'8px 16px', background:'#E8633A', color:'#fff',
-                  border:'none', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer',
+                  border:'none', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', flexShrink: 0
                 }}>Apply</button>
               </div>
               {promoApplied && (
@@ -319,11 +319,11 @@ export default function CartPage() {
                     value={redeemInput} 
                     onChange={e => { setRedeemInput(e.target.value); setRedeemError(''); }}
                     placeholder="Coins to redeem"
-                    style={{ border:'1px solid #EADFD4', borderRadius:20, padding:'8px 14px', outline:'none', fontSize:13, flex:1 }}
+                    style={{ border:'1px solid #EADFD4', borderRadius:20, padding:'8px 14px', outline:'none', fontSize:13, flex:1, minWidth:0 }}
                   />
                   <button onClick={applyRedeem} style={{
                     padding:'8px 16px', background:'#231E1B', color:'#fff',
-                    border:'none', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer',
+                    border:'none', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', flexShrink: 0
                   }}>Redeem</button>
                 </div>
                 {redeemCoins > 0 && !redeemError && (

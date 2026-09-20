@@ -35,6 +35,7 @@ import Navbar from '../components/Navbar';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import productsData from '../data/products.json';
 
 /**
  * ==============================================================================
@@ -168,7 +169,7 @@ export default function UserProfile() {
     const map = {};
     orders.forEach((o) =>
       o.items.forEach(({ product: p, qty }) => {
-        const cat = p.category || 'Other';
+        const cat = p.category || productsData.find(item => item.id === p.id)?.category || 'Other';
         map[cat] = (map[cat] || 0) + (p.price_inr || 0) * (qty || 1);
       })
     );
