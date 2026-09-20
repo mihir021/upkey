@@ -131,6 +131,9 @@ jobs:
             docker compose -f docker-compose.prod.yml --profile monitoring down --remove-orphans || true
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml --profile monitoring up -d --remove-orphans
+            # Wait briefly and log container status to confirm all services (including Grafana) are healthy
+            sleep 3
+            docker compose -f docker-compose.prod.yml --profile monitoring ps
             docker image prune -f
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
