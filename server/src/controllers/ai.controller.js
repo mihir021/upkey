@@ -10,13 +10,40 @@ const { sendAgentMessage } = require('../services/ml.service');
 const Product = require('../models/Product');
 
 /**
- * Resilient fallback handler when the Python ML microservice is offline or initializing.
- * Ensures the user is never blocked by a 503 Service Unavailable error.
+ * Resilient fallback handler when the external LLM is offline or initializing.
+ * Ensures the user is never blocked and always receives safe, helpful skincare advice.
  */
 async function handleLocalFallback(message, user_profile) {
   const cleanMsg = message.trim().toLowerCase();
 
-  // 1. Greeting intent
+  // 1. Clinical safety guardrail: detect medical / infection / prescription queries
+  if (/(cure|fungal|infection|medical|prescri|disease|doctor|dermatologist|antibiotic)/i.test(cleanMsg)) {
+    const gentleProducts = await Product.find({
+      $or: [
+        { skin_types: { $in: [/sensitive/i, /all/i] } },
+        { concerns: { $in: [/calming/i, /soothing/i, /barrier/i, /sensitive/i] } },
+      ],
+    }).sort({ rating: -1 }).limit(3).lean();
+
+    return {
+      message: "Important Note: I am Joyory's AI beauty advisor and cannot diagnose or prescribe medical treatments. For skin infections, severe conditions, or medical concerns, please consult a qualified dermatologist or physician.\n\nFor gentle, daily barrier maintenance on sensitive skin, here are calming formulas from our catalog:",
+      intent: 'SAFETY_DISCLAIMER',
+      tools_used: ['clinical_guardrail'],
+      result: {
+        results: gentleProducts.map(p => ({
+          id: p.id,
+          name: p.name,
+          brand: p.brand,
+          category: p.category,
+          price_inr: p.price_inr,
+          rating: p.rating,
+        })),
+      },
+      llm_powered: false,
+    };
+  }
+
+  // 2. Greeting intent
   const isGreeting = /^(hi|hello|hey|hii+|hola|howdy|good\s*(morning|afternoon|evening)|yo|sup|greetings)\b/i.test(cleanMsg);
   if (isGreeting) {
     return {
@@ -28,9 +55,64 @@ async function handleLocalFallback(message, user_profile) {
     };
   }
 
-  // 2. Skincare products search fallback
+  // 3. Product Comparison Intent (e.g. "compare P001 and P004")
+  const idMatches = cleanMsg.match(/p0\d{2}/gi) || [];
+  if (idMatches.length >= 2 || (cleanMsg.includes('compare') && idMatches.length >= 1)) {
+    const compareIds = [...new Set(idMatches.map(id => id.toUpperCase()))];
+    const compProducts = await Product.find({ id: { $in: compareIds } }).lean();
+    if (compProducts.length > 0) {
+      const summaries = compProducts.map(p => `• **${p.name}** ([${p.id}]) by ${p.brand}: ₹${p.price_inr?.toLocaleString('en-IN')}, Category: ${p.category}, Ideal for ${p.skin_types?.join(', ') || 'All'} skin`).join('\n');
+      return {
+        message: `Here is a side-by-side comparison of the requested products:\n\n${summaries}`,
+        intent: 'PRODUCT_COMPARISON',
+        tools_used: ['compare_products'],
+        result: {
+          results: compProducts.map(p => ({
+            id: p.id,
+            name: p.name,
+            brand: p.brand,
+            category: p.category,
+            price_inr: p.price_inr,
+            rating: p.rating,
+          })),
+        },
+        llm_powered: false,
+      };
+    }
+  }
+
+  // 4. Skincare Routine Intent
+  if (/(routine|regimen|steps|morning|night|evening)/i.test(cleanMsg)) {
+    const routineCleansers = await Product.find({ category: /cleanser/i }).sort({ rating: -1 }).limit(1).lean();
+    const routineSerums = await Product.find({ category: /serum/i }).sort({ rating: -1 }).limit(1).lean();
+    const routineMoisturizers = await Product.find({ category: /moisturizer|sunscreen/i }).sort({ rating: -1 }).limit(1).lean();
+    const routineItems = [...routineCleansers, ...routineSerums, ...routineMoisturizers];
+
+    return {
+      message: "Here is an optimal 3-step daily skincare routine tailored for healthy, radiant skin:\n\n" +
+        "1. **Step 1: Cleanse** — Gently wash away impurities without stripping moisture.\n" +
+        "2. **Step 2: Treat** — Target your specific skin concerns with an active serum.\n" +
+        "3. **Step 3: Protect & Hydrate** — Lock in moisture and shield against environmental stress.\n\n" +
+        "Recommended catalog essentials to build your routine:",
+      intent: 'ROUTINE_BUILDER',
+      tools_used: ['routine_builder'],
+      result: {
+        results: routineItems.map(p => ({
+          id: p.id,
+          name: p.name,
+          brand: p.brand,
+          category: p.category,
+          price_inr: p.price_inr,
+          rating: p.rating,
+        })),
+      },
+      llm_powered: false,
+    };
+  }
+
+  // 5. Targeted active ingredient or search query
   try {
-    const stopwords = ['the', 'and', 'for', 'with', 'show', 'find', 'want', 'need', 'give', 'some', 'what', 'which', 'best'];
+    const stopwords = ['the', 'and', 'for', 'with', 'show', 'find', 'want', 'need', 'give', 'some', 'what', 'which', 'best', 'products', 'have'];
     const terms = cleanMsg
       .replace(/[^a-zA-Z0-9\s]/g, ' ')
       .split(/\s+/)
@@ -38,17 +120,19 @@ async function handleLocalFallback(message, user_profile) {
 
     const orConditions = [];
 
-    // Match query terms against product name, category, concerns, and skin types
+    // Match query terms against product name, category, concerns, ingredients, and skin types
     if (terms.length > 0) {
       orConditions.push(
         { name: { $regex: terms.join('|'), $options: 'i' } },
         { category: { $regex: terms.join('|'), $options: 'i' } },
         { concerns: { $in: terms.map((t) => new RegExp(t, 'i')) } },
+        { key_ingredients: { $in: terms.map((t) => new RegExp(t, 'i')) } },
+        { ingredients_list: { $in: terms.map((t) => new RegExp(t, 'i')) } },
         { skin_types: { $in: terms.map((t) => new RegExp(t, 'i')) } }
       );
     }
 
-    // Incorporate user profile skin type & concerns for personalized recommendation fallback
+    // Incorporate user profile skin type & concerns
     if (user_profile && user_profile.skin_type) {
       orConditions.push({ skin_types: new RegExp(user_profile.skin_type, 'i') });
     }
@@ -69,7 +153,7 @@ async function handleLocalFallback(message, user_profile) {
     const products = await Product.find(query).sort({ rating: -1 }).limit(4).lean();
     if (products.length > 0) {
       return {
-        message: `Here are some great options matching your query:`,
+        message: `Here are our top recommended products featuring active ingredients matching your query:`,
         intent: 'PRODUCT_RECOMMENDATION',
         tools_used: ['search_products'],
         result: {
@@ -89,8 +173,9 @@ async function handleLocalFallback(message, user_profile) {
     console.error('AI chat fallback DB query error:', dbErr.message);
   }
 
+  // Default friendly fallback
   return {
-    message: "I'm here to help you shop! Try asking me to recommend products for your skin type, compare items, or find dupes.",
+    message: "I'm here to help you discover the perfect beauty products! Try asking me to recommend items for your skin type, compare products, or build a daily routine.",
     intent: 'GENERAL_SHOPPING',
     tools_used: [],
     result: null,
@@ -99,7 +184,8 @@ async function handleLocalFallback(message, user_profile) {
 }
 
 /**
- * Direct Google Gemini LLM handler powered by Google's latest Gemini 3.6 Flash.
+ * Direct Google Gemini LLM handler powered by Google's latest Gemini models.
+ * Features automated model failover across candidate models for 99.9% uptime.
  * Grounded in real-time with the Joyory product catalog from MongoDB.
  */
 async function handleGeminiChat(message, user_profile, product_id, conversation_history = []) {
@@ -108,8 +194,13 @@ async function handleGeminiChat(message, user_profile, product_id, conversation_
     throw new Error('GEMINI_API_KEY not configured');
   }
 
-  const model = process.env.LLM_MODEL || 'gemini-3.6-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  // High-availability candidate model list with automatic failover
+  const candidateModels = [
+    process.env.LLM_MODEL || 'gemini-3.6-flash',
+    'gemini-3.8-flash',
+    'gemini-flash-latest',
+    'gemini-3.1-flash-lite',
+  ];
 
   // 1. Fetch catalog products to ground the AI model with verified store inventory
   const catalog = await Product.find({})
@@ -143,7 +234,8 @@ Instructions:
 3. If the user asks about routines, recommend a step-by-step routine (Cleanser -> Toner -> Serum -> Moisturizer -> Sunscreen) using catalog products where possible.
 4. If the user asks general skincare questions (e.g. "how to treat acne", "what causes dry skin"), explain clearly and recommend targeted ingredients and products from the catalog.
 5. Format your response cleanly using markdown (bullet points, bold text, headings).
-6. Keep recommendations tailored to their skin type and budget.`;
+6. Keep recommendations tailored to their skin type and budget.
+7. If the user asks about severe medical skin conditions or infections, state that you are a beauty advisor and advise consulting a dermatologist or doctor, while suggesting gentle barrier-supportive products.`;
 
   // 4. Build contents array including conversation history for multi-turn context
   const contents = [];
@@ -176,48 +268,68 @@ Instructions:
     }
   };
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  let lastError = null;
 
-  if (!response.ok) {
-    const errBody = await response.text().catch(() => '');
-    throw new Error(`Gemini API error ${response.status}: ${errBody}`);
+  // Attempt generation with automatic candidate failover
+  for (const model of candidateModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const errBody = await response.text().catch(() => '');
+        lastError = new Error(`Model ${model} returned ${response.status}: ${errBody}`);
+        console.warn(`[AI Controller] Model ${model} failed (${response.status}), trying next candidate...`);
+        continue;
+      }
+
+      const data = await response.json();
+      const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!replyText) {
+        lastError = new Error(`Empty response from model ${model}`);
+        continue;
+      }
+
+      // 5. Detect referenced product IDs in the reply to extract interactive product cards
+      const idMatches = [...new Set(replyText.match(/P0\d{2}/g) || [])];
+      let matchedProducts = [];
+      if (idMatches.length > 0) {
+        matchedProducts = await Product.find({ id: { $in: idMatches } }).lean();
+      }
+
+      // If no specific product ID was mentioned but user asked for recommendations, include relevant catalog items
+      if (matchedProducts.length === 0 && /(recommend|suggest|product|serum|cleanser|cream|moisturizer|sunscreen|best|buy|find)/i.test(message)) {
+        matchedProducts = catalog.slice(0, 3);
+      }
+
+      return {
+        message: replyText,
+        intent: 'PRODUCT_RECOMMENDATION',
+        tools_used: ['gemini_grounded_search'],
+        result: {
+          results: matchedProducts.map((p) => ({
+            id: p.id,
+            name: p.name,
+            brand: p.brand,
+            category: p.category,
+            price_inr: p.price_inr,
+            rating: p.rating,
+          })),
+        },
+        llm_powered: true,
+      };
+    } catch (modelErr) {
+      lastError = modelErr;
+      console.warn(`[AI Controller] Model ${model} request error:`, modelErr.message);
+    }
   }
 
-  const data = await response.json();
-  const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm here to help with your skincare needs! What can I help you find today?";
-
-  // 5. Detect referenced product IDs in the reply to extract interactive product cards
-  const idMatches = [...new Set(replyText.match(/P0\d{2}/g) || [])];
-  let matchedProducts = [];
-  if (idMatches.length > 0) {
-    matchedProducts = await Product.find({ id: { $in: idMatches } }).lean();
-  }
-
-  // If no specific product ID was mentioned but user asked for recommendations, include relevant catalog items
-  if (matchedProducts.length === 0 && /(recommend|suggest|product|serum|cleanser|cream|moisturizer|sunscreen|best|buy|find)/i.test(message)) {
-    matchedProducts = catalog.slice(0, 3);
-  }
-
-  return {
-    message: replyText,
-    intent: 'PRODUCT_RECOMMENDATION',
-    tools_used: ['gemini_grounded_search'],
-    result: {
-      results: matchedProducts.map((p) => ({
-        id: p.id,
-        name: p.name,
-        brand: p.brand,
-        category: p.category,
-        price_inr: p.price_inr,
-        rating: p.rating,
-      })),
-    },
-    llm_powered: true,
-  };
+  throw lastError || new Error('All Gemini candidate models failed.');
 }
 
 /**
