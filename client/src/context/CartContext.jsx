@@ -24,6 +24,7 @@ function loadJSON(key, fallback) {
   }
 }
 
+<<<<<<< HEAD
 // Sanitize legacy demo orders, wishlist, and history from localStorage
 function sanitizeStorage() {
   try {
@@ -32,6 +33,9 @@ function sanitizeStorage() {
       const cleaned = orders.filter(o => o && !DEMO_ORDER_IDS.has(o.id));
       localStorage.setItem(STORAGE_KEY_ORDERS, JSON.stringify(cleaned));
     }
+=======
+// Removed DEFAULT_DEMO_ORDERS
+>>>>>>> 21d4540 (Implement Joyory loyalty reward coin system)
 
     const wish = loadJSON(STORAGE_KEY_WISH, {});
     if (wish && Object.keys(wish).length === 1 && wish.P015?.id === 'P015') {
@@ -47,7 +51,12 @@ function sanitizeStorage() {
   }
 }
 
+<<<<<<< HEAD
 sanitizeStorage();
+=======
+const storedWish   = loadJSON(STORAGE_KEY_WISH,   null);
+const storedHist   = loadJSON(STORAGE_KEY_HISTORY, null);
+>>>>>>> 21d4540 (Implement Joyory loyalty reward coin system)
 
 function loadCleanOrders() {
   const orders = loadJSON(STORAGE_KEY_ORDERS, []);
@@ -70,10 +79,16 @@ function loadCleanHistory() {
 
 // Initial state containing strictly real user data
 const initialState = {
+<<<<<<< HEAD
   cart:     loadJSON(STORAGE_KEY_CART, {}),
   wishlist: loadCleanWishlist(),
   orders:   loadCleanOrders(),
   history:  loadCleanHistory(),
+=======
+  cart:    loadJSON(STORAGE_KEY_CART, {}),
+  wishlist: storedWish && Object.keys(storedWish).length ? storedWish : DEFAULT_DEMO_WISH,
+  history: Array.isArray(storedHist) && storedHist.length ? storedHist : DEFAULT_DEMO_HISTORY,
+>>>>>>> 21d4540 (Implement Joyory loyalty reward coin system)
 };
 
 function cartReducer(state, action) {
@@ -126,6 +141,7 @@ function cartReducer(state, action) {
       return { ...state, wishlist: next };
     }
 
+<<<<<<< HEAD
     case 'PLACE_ORDER': {
       const items = Object.values(state.cart);
       if (!items.length) return state;
@@ -139,6 +155,10 @@ function cartReducer(state, action) {
       };
       return { ...state, cart: {}, orders: [order, ...state.orders] };
     }
+=======
+    case 'PLACE_ORDER_SUCCESS':
+      return { ...state, cart: {} };
+>>>>>>> 21d4540 (Implement Joyory loyalty reward coin system)
 
     case 'VIEW_PRODUCT': {
       const pid = action.id;
@@ -168,10 +188,13 @@ export function CartProvider({ children }) {
   }, [state.wishlist]);
 
   useEffect(() => {
+<<<<<<< HEAD
     localStorage.setItem(STORAGE_KEY_ORDERS,  JSON.stringify(state.orders));
   }, [state.orders]);
 
   useEffect(() => {
+=======
+>>>>>>> 21d4540 (Implement Joyory loyalty reward coin system)
     localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.history));
   }, [state.history]);
 
@@ -180,7 +203,6 @@ export function CartProvider({ children }) {
   const updateQty      = useCallback((id, delta) => dispatch({ type: 'UPDATE_QTY', id, delta }), []);
   const clearCart      = useCallback(() => dispatch({ type: 'CLEAR_CART' }), []);
   const toggleWishlist = useCallback((product) => dispatch({ type: 'TOGGLE_WISHLIST', product }), []);
-  const placeOrder     = useCallback(() => dispatch({ type: 'PLACE_ORDER' }), []);
   const viewProduct    = useCallback((id) => dispatch({ type: 'VIEW_PRODUCT', id }), []);
 
   /**
@@ -220,11 +242,11 @@ export function CartProvider({ children }) {
       updateQty,
       clearCart,
       toggleWishlist,
-      placeOrder,
       viewProduct,
       clearUserData,
       inWishlist,
       inCart,
+      dispatch, // Expose dispatch for API actions
     }}>
       {children}
     </CartContext.Provider>

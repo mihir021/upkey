@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { ShoppingBag, Heart, Search, User, Home, Menu, X, LogOut, ChevronDown } from 'lucide-react';
+import { ShoppingBag, Heart, Search, User, Home, Menu, X, LogOut, ChevronDown, Coins } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 
 const NAV_LINKS = [
   { label:'Shop',      to:'/shop' },
@@ -21,8 +22,19 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen]     = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchVal, setSearchVal]   = useState('');
+  const [coinBalance, setCoinBalance] = useState(null);
   const searchRef = useRef();
   const profileRef = useRef();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      api.get('/orders/rewards/balance')
+        .then(res => setCoinBalance(res.data.coinsBalance))
+        .catch(console.error);
+    } else {
+      setCoinBalance(null);
+    }
+  }, [isAuthenticated]);
 
   // close dropdowns on outside click
   useEffect(() => {
@@ -139,6 +151,20 @@ export default function Navbar() {
             )}
           </button>
 
+          {/* Rewards Badge (If logged in) */}
+          {isAuthenticated && coinBalance !== null && (
+            <button onClick={() => navigate('/rewards')} style={{
+              display:'flex', alignItems:'center', gap:4,
+              padding:'6px 12px', borderRadius:20,
+              background: location.pathname==='/rewards' ? '#fde8d8' : '#FDFBF7',
+              border:'1.5px solid #EADFD4', cursor:'pointer',
+              color:'#231E1B', fontWeight:700, fontSize:13
+            }} title="Joyory Rewards">
+              <Coins size={16} color="#E8633A" />
+              {coinBalance}
+            </button>
+          )}
+
           {/* Profile Dropdown or Sign In CTA */}
           {(isAuthenticated && user) ? (
             <div ref={profileRef} style={{ position:'relative' }}>
@@ -186,6 +212,7 @@ export default function Navbar() {
                     { label:'User Profile', to:'/profile' },
                     { label:'Dashboard',    to:'/dashboard' },
                     { label:'My Orders',    to:'/orders' },
+                    { label:'My Rewards',   to:'/rewards' },
                   ].map(item => (
                     <button key={item.to} onClick={() => { navigate(item.to); setProfileOpen(false); }}
                       style={{

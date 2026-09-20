@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, ShoppingBag } from 'lucide-react';
+import { Package, ShoppingBag, Loader2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
-import { useCart } from '../context/CartContext';
+import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 
 const STATUS_COLORS = {
   Delivered:  { bg:'#e8f5ec', color:'#1e8a4c' },
@@ -16,7 +18,27 @@ function imgSrc(p) {
 
 export default function OrdersPage() {
   const navigate = useNavigate();
-  const { orders } = useCart();
+  const { isAuthenticated, requireAuth } = useAuth();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!requireAuth('view your orders', () => navigate('/'))) return;
+
+    api.get('/orders')
+      .then(res => setOrders(res.data))
+      .catch(err => console.error('Error fetching orders:', err))
+      .finally(() => setLoading(false));
+  }, [isAuthenticated, navigate, requireAuth]);
+
+  if (loading) return (
+    <div style={{ minHeight:'100vh', background:'#FDFBF7', fontFamily:'"Inter",sans-serif' }}>
+      <Navbar />
+      <div style={{ display:'flex', justifyContent:'center', padding:'100px' }}>
+        <Loader2 size={32} color="#E8633A" style={{ animation: 'spin 1s linear infinite' }} />
+      </div>
+    </div>
+  );
 
   if (!orders.length) return (
     <div style={{ minHeight:'100vh', background:'#FDFBF7', fontFamily:'"Inter",sans-serif' }}>
