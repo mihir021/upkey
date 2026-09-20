@@ -65,24 +65,39 @@ export default function OnboardingPage() {
     setArr(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
   }
 
+  // Handle onboarding submission and personalized dashboard generation
   async function handleSubmit() {
+    // Prevent duplicate submissions while in-flight
+    if (loading) return;
     setLoading(true);
     setError('');
     try {
+      // If goals is empty, fallback to default goals so user has a populated dashboard
+      const payloadGoals = goals.length > 0 ? goals : ['Daily Skincare Routine'];
+
       await api.put('/profile/preferences', {
-        skinType, skinTone, concerns, budget,
+        skinType,
+        skinTone,
+        concerns,
+        budget,
         preferredCategories: categories,
         preferredIngredients: ingredients,
-        shoppingGoals: goals,
+        shoppingGoals: payloadGoals,
       });
-      await fetchMe(); // Refresh context so app knows onboarding is done
+
+      // Refresh AuthContext user state so app recognizes onboarding is complete
+      await fetchMe();
+
+      // Navigate to personalized dashboard
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save preferences.');
+      console.error('Failed to save onboarding preferences:', err);
+      setError(err.response?.data?.message || 'Failed to save preferences. Please check your connection and try again.');
       setLoading(false);
     }
   }
 
+  // Determines whether the user can proceed to the next step
   function canProceed() {
     switch (step) {
       case 1: return !!skinType;
@@ -91,7 +106,7 @@ export default function OnboardingPage() {
       case 4: return budget !== null;
       case 5: return categories.length > 0;
       case 6: return true; // ingredients optional
-      case 7: return goals.length > 0;
+      case 7: return true; // shopping goals optional - allows immediate dashboard generation
       default: return true;
     }
   }
@@ -216,7 +231,10 @@ export default function OnboardingPage() {
 
         {/* Step 7: Shopping Goals */}
         {step === 7 && (
-          <StepContainer title="What are you trying to achieve?" subtitle="Select your skincare goals.">
+          <StepContainer
+            title="What are you trying to achieve?"
+            subtitle="Select your skincare goals (optional — or click Build My Dashboard to use your skin profile)."
+          >
             <div style={chipGridStyle}>
               {GOAL_OPTIONS.map(g => (
                 <ChipButton key={g} selected={goals.includes(g)} onClick={() => toggleArray(goals, setGoals, g)} label={g} />
@@ -237,16 +255,65 @@ export default function OnboardingPage() {
                 {step === 6 ? (ingredients.length === 0 ? 'Skip' : 'Next') : 'Next'} <ArrowRight size={16} />
               </button>
             ) : (
-              <button onClick={handleSubmit} disabled={loading || !canProceed()} style={{ ...primaryBtnStyle, background: loading ? '#ccc' : 'linear-gradient(135deg,#E8633A,#c94f2a)' }}>
-                {loading ? <><Loader2 size={16} style={{ animation:'spin 1s linear infinite' }} /> Saving...</> : <><CheckCircle size={16} /> Build My Dashboard</>}
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                style={{
+                  ...primaryBtnStyle,
+                  opacity: loading ? 0.75 : 1,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  background: 'linear-gradient(135deg,#E8633A,#c94f2a)',
+                  boxShadow: '0 6px 20px rgba(232,99,58,.35)',
+                }}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={16} style={{ animation:'spin 1s linear infinite' }} />
+                    Building Your Dashboard...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={16} />
+                    Build My Dashboard
+                  </>
+                )}
               </button>
             )}
           </div>
         )}
 
+        {/* Error notification with retry */}
         {error && (
-          <div style={{ marginTop:16, padding:12, background:'#fde8d8', color:'#c94f2a', borderRadius:12, fontSize:13, textAlign:'center' }}>
-            {error}
+          <div style={{
+            marginTop: 18,
+            padding: '12px 18px',
+            background: '#fde8d8',
+            color: '#c94f2a',
+            borderRadius: 14,
+            fontSize: 13,
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            border: '1px solid #f9cdb8',
+          }}>
+            <span>{error}</span>
+            <button
+              onClick={handleSubmit}
+              style={{
+                background: '#c94f2a',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                padding: '5px 12px',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Retry
+            </button>
           </div>
         )}
       </div>
