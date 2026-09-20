@@ -26,6 +26,22 @@ const userSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+
+    // ── Personalization / Onboarding ──
+    skinType: {
+      type: String,
+      enum: ['Oily', 'Dry', 'Combination', 'Normal', 'Sensitive'],
+    },
+    skinTone: {
+      type: String,
+      enum: ['Fair', 'Light', 'Medium', 'Tan', 'Deep', 'All'],
+    },
+    concerns:             [{ type: String, trim: true }],
+    budget:               { type: Number, min: 0 },
+    preferredCategories:  [{ type: String, trim: true }],
+    preferredIngredients: [{ type: String, trim: true }],
+    shoppingGoals:        [{ type: String, trim: true }],
+    onboardingCompleted:  { type: Boolean, default: false },
   },
   {
     timestamps: true, // adds createdAt / updatedAt automatically

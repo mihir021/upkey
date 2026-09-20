@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Heart, TrendingUp, Package, ChevronRight, Sparkles } from 'lucide-react';
+import { ShoppingBag, Heart, TrendingUp, Package, ChevronRight, Sparkles, Coins, Settings, Loader2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
 import { useCart } from '../context/CartContext';
@@ -15,19 +15,30 @@ function imgSrc(p) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { orders, wishlist, cartCount, history } = useCart();
+  const { orders, wishlist, history } = useCart();
 
+  const [dashData, setDashData] = useState(null);
   const [recentProds, setRecentProds] = useState([]);
-  const [trending,    setTrending]    = useState([]);
+  const [loadingDash, setLoadingDash] = useState(true);
   const [loadingRecent, setLoadingRecent] = useState(false);
 
   const totalSpent = orders.reduce((s, o) => s + (o.total || 0), 0);
   const wishCount  = Object.keys(wishlist).length;
 
-  // Load recently viewed products asynchronously without cascading render triggers
+  // Fetch personalized dashboard data
+  useEffect(() => {
+    api.get('/dashboard')
+      .then(r => setDashData(r.data))
+      .catch(console.error)
+      .finally(() => setLoadingDash(false));
+  }, []);
+
+  // Load recently viewed products
   useEffect(() => {
     if (!history.length) return;
     let isMounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoadingRecent(true);
 
     Promise.all(
       history.slice(0, 6).map(id => api.get(`/products/${id}`).catch(() => null))
@@ -36,22 +47,11 @@ export default function Dashboard() {
         setRecentProds(results.filter(Boolean).map(r => r.data));
       }
     }).finally(() => {
-      if (isMounted) {
-        setLoadingRecent(false);
-      }
+      if (isMounted) setLoadingRecent(false);
     });
 
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [history]);
-
-  // Fetch trending
-  useEffect(() => {
-    api.get('/products?sort=rating&limit=6')
-      .then(r => setTrending(r.data.products || []))
-      .catch(console.error);
-  }, []);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -59,6 +59,9 @@ export default function Dashboard() {
     if (h < 17) return 'Good afternoon';
     return 'Good evening';
   };
+
+  const dashUser = dashData?.user;
+  const sections = dashData?.sections || [];
 
   return (
     <div style={{ minHeight:'100vh', background:'#FDFBF7', fontFamily:'"Inter",sans-serif' }}>
@@ -79,13 +82,16 @@ export default function Dashboard() {
               {greeting()}, ✨
             </p>
             <h1 style={{ margin:'0 0 6px', color:'#fff', fontSize:'clamp(20px,4vw,28px)', fontWeight:800, fontFamily:'"Playfair Display",serif' }}>
-              {user?.name || 'Welcome back'}
+              {user?.name || dashUser?.name || 'Welcome back'}
             </h1>
             <p style={{ margin:0, color:'rgba(255,255,255,.55)', fontSize:13 }}>
-              Your Glow More skincare journey
+              {dashUser?.skinType
+                ? `${dashUser.skinType} skin · ${dashUser.concerns?.slice(0,2).join(', ') || 'Your skincare journey'}`
+                : 'Your Joyory skincare journey'
+              }
             </p>
           </div>
-          <div style={{ display:'flex', gap:12 }}>
+          <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
             <button onClick={() => navigate('/shop')} style={{
               padding:'10px 22px', background:'#E8633A', color:'#fff',
               border:'none', borderRadius:24, fontSize:14, fontWeight:700, cursor:'pointer',
@@ -96,8 +102,9 @@ export default function Dashboard() {
             <button onClick={() => navigate('/profile')} style={{
               padding:'10px 22px', background:'rgba(255,255,255,.1)', color:'#fff',
               border:'1.5px solid rgba(255,255,255,.2)', borderRadius:24, fontSize:14, fontWeight:700, cursor:'pointer',
+              display:'flex', alignItems:'center', gap:6,
             }}>
-              My Profile
+              <Settings size={14} /> Preferences
             </button>
           </div>
         </div>
@@ -108,7 +115,7 @@ export default function Dashboard() {
             { icon:<TrendingUp size={20}/>, label:'Total Spent', val:`₹${Math.round(totalSpent).toLocaleString('en-IN')}`, color:'#E8633A', bg:'#fde8d8', to:'/profile' },
             { icon:<Package size={20}/>, label:'Orders', val:orders.length, color:'#3A7BD5', bg:'#e8f0fb', to:'/orders' },
             { icon:<Heart size={20}/>, label:'Wishlist', val:wishCount, color:'#8B5E83', bg:'#f0e8f5', to:'/wishlist' },
-            { icon:<ShoppingBag size={20}/>, label:'In Cart', val:cartCount, color:'#27AE60', bg:'#e8f5ec', to:'/cart' },
+            { icon:<Coins size={20}/>, label:'Joyory Coins', val:dashUser?.coinsBalance || 0, color:'#27AE60', bg:'#e8f5ec', to:'/rewards' },
           ].map(stat => (
             <button key={stat.label} onClick={() => navigate(stat.to)} style={{
               background:'#fff', border:'1.5px solid #EADFD4', borderRadius:18, padding:'18px 18px',
@@ -128,6 +135,51 @@ export default function Dashboard() {
             </button>
           ))}
         </div>
+
+        {/* Shopping Goals Tags */}
+        {dashUser?.shoppingGoals?.length > 0 && (
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:28 }}>
+            <span style={{ fontSize:12, fontWeight:700, color:'#665D57', lineHeight:'28px' }}>Your Goals:</span>
+            {dashUser.shoppingGoals.map(g => (
+              <span key={g} style={{ padding:'4px 14px', borderRadius:20, background:'#fde8d8', color:'#c94f2a', fontSize:12, fontWeight:600 }}>
+                {g}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Loading state */}
+        {loadingDash && (
+          <div style={{ display:'flex', justifyContent:'center', padding:40 }}>
+            <Loader2 size={28} color="#E8633A" style={{ animation:'spin 1s linear infinite' }} />
+          </div>
+        )}
+
+        {/* Personalized Product Sections */}
+        {sections.map(section => (
+          <section key={section.id} style={{ marginBottom:40 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+              <div>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <Sparkles size={18} color="#E8633A" />
+                  <h2 style={{ margin:0, fontFamily:'"Playfair Display",serif', fontSize:20, fontWeight:700, color:'#231E1B' }}>
+                    {section.title}
+                  </h2>
+                </div>
+                {section.subtitle && (
+                  <p style={{ margin:'4px 0 0 28px', fontSize:12, color:'#665D57' }}>{section.subtitle}</p>
+                )}
+              </div>
+              <button onClick={() => navigate('/shop')} style={{ background:'none', border:'none', color:'#E8633A', fontWeight:700, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+                See All <ChevronRight size={14} />
+              </button>
+            </div>
+            {/* Spacious product cards grid matching overall app layout */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(250px,1fr))', gap:22 }}>
+              {section.products.map(p => <ProductCard key={p.id||p._id} product={p} />)}
+            </div>
+          </section>
+        ))}
 
         {/* Recently Viewed */}
         {history.length > 0 && (
@@ -176,7 +228,6 @@ export default function Dashboard() {
                   display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10,
                 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                    {/* Thumbnails */}
                     <div style={{ display:'flex', gap:-8 }}>
                       {order.items.slice(0,3).map(({ product: p }, i) => {
                         const src = imgSrc(p);
@@ -216,31 +267,11 @@ export default function Dashboard() {
             </div>
           </section>
         )}
-
-        {/* Trending / Recommended */}
-        {trending.length > 0 && (
-          <section>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                <Sparkles size={18} color="#E8633A" />
-                <h2 style={{ margin:0, fontFamily:'"Playfair Display",serif', fontSize:20, fontWeight:700, color:'#231E1B' }}>
-                  Trending Now
-                </h2>
-              </div>
-              <button onClick={() => navigate('/explore?sort=rating')} style={{ background:'none', border:'none', color:'#E8633A', fontWeight:700, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
-                See All <ChevronRight size={14} />
-              </button>
-            </div>
-            {/* Spacious 3-4 Column Grid for Trending Products */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(250px,1fr))', gap:22 }}>
-              {trending.map(p => <ProductCard key={p.id||p._id} product={p} />)}
-            </div>
-          </section>
-        )}
       </div>
 
       <style>{`
         @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );

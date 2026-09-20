@@ -20,6 +20,7 @@ import WishlistPage   from './pages/WishlistPage.jsx';
 import UserProfile    from './pages/UserProfile.jsx';
 import OrdersPage     from './pages/OrdersPage.jsx';
 import RewardsPage    from './pages/RewardsPage.jsx';
+import OnboardingPage from './pages/OnboardingPage.jsx';
 
 /** Requires a valid JWT in localStorage. */
 function ProtectedRoute({ children }) {
@@ -58,6 +59,7 @@ function App() {
               <Route path="/profile"     element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
               <Route path="/orders"      element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
               <Route path="/rewards"     element={<ProtectedRoute><RewardsPage /></ProtectedRoute>} />
+              <Route path="/onboarding"  element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
               <Route path="/dashboard"   element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
               {/* Fallback */}

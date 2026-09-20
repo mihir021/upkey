@@ -159,23 +159,38 @@ export default function UserProfile() {
               <div style={{ fontSize:16, fontWeight:800, color:'#fff' }}>{topCategories[0][0] || '—'}</div>
             </div>
           )}
-          <button style={{
+          <button onClick={() => navigate('/onboarding')} style={{
             position:'absolute', top:20, right:20,
             background:'rgba(255,255,255,.2)', border:'none', borderRadius:12,
             width:36, height:36, cursor:'pointer',
             display:'flex', alignItems:'center', justifyContent:'center',
-          }}>
+            transition: 'background .2s',
+          }} onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,.3)'} onMouseLeave={e => e.currentTarget.style.background='rgba(255,255,255,.2)'} title="Edit Preferences">
             <Edit3 size={16} color="#fff" />
           </button>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats & Personalization Grid */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:14, marginBottom:28 }}>
           <StatCard icon={<TrendingUp size={22}/>} label="Total Spent" value={`₹${Math.round(totalSpent).toLocaleString('en-IN')}`} color="#E8633A" bg="#fde8d8" />
           <StatCard icon={<Package size={22}/>} label="Total Orders" value={orders.length} color="#3A7BD5" bg="#e8f0fb" />
           <StatCard icon={<ShoppingBag size={22}/>} label="Items Purchased" value={totalItems} color="#27AE60" bg="#e8f5ec" />
           <StatCard icon={<Heart size={22}/>} label="Wishlist Items" value={Object.keys(wishlist).length} color="#8B5E83" bg="#f0e8f5" />
           <StatCard icon={<Award size={22}/>} label="Avg Order Value" value={`₹${avgOrder.toLocaleString('en-IN')}`} color="#F39C12" bg="#fef5e7" />
+          
+          <button onClick={() => navigate('/onboarding')} style={{
+            background:'#fff', border:'1.5px dashed #E8633A', borderRadius:20, padding:'20px 22px',
+            display:'flex', alignItems:'center', gap:16, cursor:'pointer',
+            transition:'all .2s', textAlign:'left',
+          }} onMouseEnter={e => { e.currentTarget.style.background='#fde8d8'; e.currentTarget.style.borderColor='#c94f2a'; }} onMouseLeave={e => { e.currentTarget.style.background='#fff'; e.currentTarget.style.borderColor='#E8633A'; }}>
+            <div style={{ width:52, height:52, borderRadius:16, background:'#fde8d8', color:'#E8633A', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <Edit3 size={24} />
+            </div>
+            <div>
+              <div style={{ fontSize:16, fontWeight:800, color:'#231E1B', lineHeight:1.1 }}>Personalize</div>
+              <div style={{ fontSize:11, fontWeight:600, color:'#665D57', marginTop:4 }}>Update your skin type & preferences</div>
+            </div>
+          </button>
         </div>
 
         {/* Charts Row */}
