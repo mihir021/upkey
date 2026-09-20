@@ -49,6 +49,10 @@ function sanitizeStorage() {
 
 sanitizeStorage();
 
+// Note: these are left over if they were needed, otherwise not used.
+const storedWish   = loadJSON(STORAGE_KEY_WISH,   null);
+const storedHist   = loadJSON(STORAGE_KEY_HISTORY, null);
+
 function loadCleanOrders() {
   const orders = loadJSON(STORAGE_KEY_ORDERS, []);
   return Array.isArray(orders) ? orders.filter(o => o && !DEMO_ORDER_IDS.has(o.id)) : [];
@@ -126,19 +130,8 @@ function cartReducer(state, action) {
       return { ...state, wishlist: next };
     }
 
-    case 'PLACE_ORDER': {
-      const items = Object.values(state.cart);
-      if (!items.length) return state;
-      const total = items.reduce((s, { product, qty }) => s + product.price_inr * qty, 0);
-      const order = {
-        id:     `ORD-${Date.now()}`,
-        items,
-        total,
-        date:   new Date().toISOString(),
-        status: 'Processing',
-      };
-      return { ...state, cart: {}, orders: [order, ...state.orders] };
-    }
+    case 'PLACE_ORDER_SUCCESS':
+      return { ...state, cart: {} };
 
     case 'VIEW_PRODUCT': {
       const pid = action.id;
@@ -180,7 +173,6 @@ export function CartProvider({ children }) {
   const updateQty      = useCallback((id, delta) => dispatch({ type: 'UPDATE_QTY', id, delta }), []);
   const clearCart      = useCallback(() => dispatch({ type: 'CLEAR_CART' }), []);
   const toggleWishlist = useCallback((product) => dispatch({ type: 'TOGGLE_WISHLIST', product }), []);
-  const placeOrder     = useCallback(() => dispatch({ type: 'PLACE_ORDER' }), []);
   const viewProduct    = useCallback((id) => dispatch({ type: 'VIEW_PRODUCT', id }), []);
 
   /**
@@ -220,11 +212,11 @@ export function CartProvider({ children }) {
       updateQty,
       clearCart,
       toggleWishlist,
-      placeOrder,
       viewProduct,
       clearUserData,
       inWishlist,
       inCart,
+      dispatch, // Expose dispatch for API actions
     }}>
       {children}
     </CartContext.Provider>

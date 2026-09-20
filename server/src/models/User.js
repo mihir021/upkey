@@ -21,6 +21,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    coinsBalance: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true, // adds createdAt / updatedAt automatically

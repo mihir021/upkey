@@ -9,9 +9,13 @@ import {
   X,
   LogOut,
   ChevronDown,
+  Coins,
+  User,
+  Home,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 
 /**
  * ==============================================================================
@@ -59,8 +63,20 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen]       = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchVal, setSearchVal]     = useState('');
+  const [coinBalance, setCoinBalance] = useState(null);
   const searchRef = useRef();
   const profileRef = useRef();
+
+  // Fetch rewards coin balance when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      api.get('/orders/rewards/balance')
+        .then(res => setCoinBalance(res.data.coinsBalance))
+        .catch(console.error);
+    } else {
+      setCoinBalance(null);
+    }
+  }, [isAuthenticated]);
 
   // Close profile dropdown on outside click
   useEffect(() => {
@@ -191,6 +207,23 @@ export default function Navbar() {
               )}
             </Link>
 
+            {/* ── Rewards Coin Badge (visible when logged in) ── */}
+            {isAuthenticated && coinBalance !== null && (
+              <Link
+                to="/rewards"
+                aria-label="Joyory Rewards"
+                title="Joyory Rewards"
+                className={`flex items-center gap-1.5 h-10 px-3 rounded-full border shadow-2xs text-xs font-bold transition-all hover:scale-105 ${
+                  isActive('/rewards')
+                    ? 'border-[#E8633A]/60 bg-[#FAF6F2] text-[#E8633A]'
+                    : 'border-[#EADFD4] bg-white text-[#231E1B] hover:border-[#E8633A]/40 hover:text-[#E8633A]'
+                }`}
+              >
+                <Coins className="w-4 h-4 text-[#E8633A]" />
+                {coinBalance}
+              </Link>
+            )}
+
             {/* ── User Account Chip with Dropdown ── */}
             {isAuthenticated && user ? (
               <div ref={profileRef} className="relative flex items-center">
@@ -235,6 +268,7 @@ export default function Navbar() {
                         { label: 'User Profile', to: '/profile' },
                         { label: 'Dashboard',    to: '/dashboard' },
                         { label: 'My Orders',    to: '/orders' },
+                        { label: 'My Rewards',   to: '/rewards' },
                       ].map((item) => (
                         <button
                           key={item.to}
