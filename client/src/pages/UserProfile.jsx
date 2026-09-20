@@ -1,79 +1,171 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import {
-  PieChart, Pie, Cell, Tooltip as PieTooltip, ResponsiveContainer, Legend,
-  XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip as PieTooltip,
+  ResponsiveContainer,
+  Legend,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  AreaChart,
+  Area,
 } from 'recharts';
-import { ShoppingBag, Heart, TrendingUp, Award, Package, Edit3 } from 'lucide-react';
+import {
+  ShoppingBag,
+  Heart,
+  TrendingUp,
+  Package,
+  Sparkles,
+  Coins,
+  ShieldCheck,
+  Droplets,
+  Target,
+  ChevronRight,
+  ArrowRight,
+  Sliders,
+  Calendar,
+  CheckCircle2,
+  Compass,
+} from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 
-const PALETTE = ['#E8633A','#8B5E83','#3A7BD5','#27AE60','#F39C12','#E74C3C','#16A085','#8E44AD'];
+/**
+ * ==============================================================================
+ * UserProfile Component — Glow More Luxury Skincare Account & Intelligence Hub
+ * ==============================================================================
+ *
+ * Professional UI/UX Architecture:
+ *
+ * 1. Hero Identity Card:
+ *    - Deep warm espresso/terracotta obsidian finish (linear gradient) with
+ *      editorial serif typography ("Playfair Display"), glowing initial avatar,
+ *      verified status badges, and quick personalization CTA buttons.
+ *
+ * 2. Balanced 4-KPI Metric Grid:
+ *    - Replaces the awkward 5+1 wrapping grid with a perfectly symmetrical
+ *      4-column KPI layout (Total Spent, Total Orders, Wishlist Items, Joyory Coins).
+ *
+ * 3. Dedicated AI Skin Profile & Intelligence Section:
+ *    - Highlights the user's clinical dermatological profile (skinType,
+ *      skinTone, primary concerns, AI calibration status) with an instant
+ *      option to update preferences or retake the onboarding diagnostic.
+ *
+ * 4. Two-Column Analytics & Activity Dashboard:
+ *    - Left Column: Spending by Category & 14-Day Purchasing Trend charts with
+ *      curated empty/active states.
+ *    - Right Column: Recent Order status tracker and Wishlist Highlights showcase.
+ *
+ * 5. Quick Luxury Concierge Navigation:
+ *    - Direct entry points to Orders, Rewards, Product Comparison, and Store.
+ */
 
+// Harmonious category palette tailored for luxury skincare
+const PALETTE = [
+  '#E8633A', // Terracotta Core
+  '#8B5E83', // Dusty Mauve
+  '#3A7BD5', // Hydration Blue
+  '#27AE60', // Botanical Green
+  '#F39C12', // Active Amber
+  '#E74C3C', // Coral Radiance
+  '#16A085', // Peptide Jade
+  '#8E44AD', // Antioxidant Violet
+];
+
+// Helper to resolve valid product image links (ignoring 3D GLB models)
 function imgSrc(p) {
   const cl = p?.cloudinary_link || '';
-  return (!cl || cl.endsWith('.glb') || cl.endsWith('.gltf')) ? null : cl;
+  return !cl || cl.endsWith('.glb') || cl.endsWith('.gltf') ? null : cl;
 }
 
 /**
- * StatCard - metric display block with luxury tinted icon backdrop
+ * StatCard - Standardized KPI metric block with luxury tinted icon backdrop
  */
-function StatCard({ icon, label, value, sub, color = '#E8633A', bg = '#fde8d8' }) {
+function StatCard({ icon, label, value, sub, color = '#E8633A', bg = '#FDE8D8' }) {
   return (
-    <div style={{
-      background:'#fff', border:'1.5px solid #EADFD4', borderRadius:20, padding:'20px 22px',
-      display:'flex', alignItems:'center', gap:16,
-    }}>
-      <div style={{ width:52, height:52, borderRadius:16, background: bg, color, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+    <div className="bg-white rounded-2xl p-5 border border-[#EADFD4] shadow-2xs hover:shadow-xs hover:border-[#E8633A]/40 transition-all flex items-center gap-4">
+      <div
+        className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-2xs"
+        style={{ background: bg, color: color }}
+      >
         {icon}
       </div>
-      <div>
-        <div style={{ fontSize:26, fontWeight:800, color:'#231E1B', lineHeight:1.1 }}>{value}</div>
-        <div style={{ fontSize:12, fontWeight:600, color:'#665D57', marginTop:2 }}>{label}</div>
-        {sub && <div style={{ fontSize:11, color: color, fontWeight:600, marginTop:2 }}>{sub}</div>}
+      <div className="min-w-0">
+        <div className="text-2xl font-extrabold text-[#231E1B] tracking-tight leading-none truncate">
+          {value}
+        </div>
+        <div className="text-xs font-semibold text-[#665D57] mt-1 truncate">
+          {label}
+        </div>
+        {sub && (
+          <div
+            className="text-[11px] font-bold mt-1 truncate"
+            style={{ color }}
+          >
+            {sub}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 /**
- * CustomTooltip - extracted outside component to satisfy React Compiler & static component rules
+ * CustomTooltip - High-contrast frosted popover for spending charts
  */
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background:'#fff', border:'1.5px solid #EADFD4', borderRadius:12, padding:'10px 14px', boxShadow:'0 4px 20px rgba(0,0,0,.1)' }}>
-      <p style={{ margin:'0 0 4px', fontWeight:700, fontSize:12, color:'#231E1B' }}>{label}</p>
-      <p style={{ margin:0, fontWeight:800, fontSize:14, color:'#E8633A' }}>₹{Number(payload[0]?.value).toLocaleString('en-IN')}</p>
+    <div className="bg-white/95 backdrop-blur-sm border border-[#EADFD4] rounded-xl px-3.5 py-2.5 shadow-lg shadow-[#231E1B]/10">
+      <p className="text-[11px] font-semibold text-[#665D57] mb-0.5">{label}</p>
+      <p className="text-sm font-extrabold text-[#E8633A]">
+        ₹{Number(payload[0]?.value).toLocaleString('en-IN')}
+      </p>
     </div>
   );
 }
 
 export default function UserProfile() {
   const navigate = useNavigate();
-  const { user }   = useAuth();
+  const { user, fetchMe } = useAuth();
   const { orders, wishlist } = useCart();
 
-  // Stable reference timestamp stored once on mount to avoid impure Date calls during render
+  // Reference timestamp stored once on mount to avoid impure Date calls during render
   const [referenceTimestamp] = useState(() => Date.now());
+  const [coinBalance, setCoinBalance] = useState(null);
 
-  // ── Analytics computations ──────────────────────────────────────────────────
+  // Sync user profile & fetch live Joyory reward coin balance
+  useEffect(() => {
+    if (typeof fetchMe === 'function') {
+      fetchMe();
+    }
+    api.get('/orders/rewards/balance')
+      .then((res) => setCoinBalance(res.data.coinsBalance))
+      .catch((err) => console.error('Rewards balance check error:', err));
+  }, []);
+
+  // ── Analytics Computations ──────────────────────────────────────────────────
   const totalSpent = useMemo(() =>
-    orders.reduce((s, o) => s + (o.total || 0), 0), [orders]);
+    orders.reduce((sum, o) => sum + (o.total || 0), 0), [orders]);
 
   const totalItems = useMemo(() =>
-    orders.reduce((s, o) => s + o.items.reduce((is, i) => is + i.qty, 0), 0), [orders]);
+    orders.reduce((sum, o) => sum + o.items.reduce((itemSum, i) => itemSum + i.qty, 0), 0), [orders]);
 
   const avgOrder = orders.length ? Math.round(totalSpent / orders.length) : 0;
 
-  // Category spending for pie chart
+  // Category spending aggregation for pie chart
   const categorySpend = useMemo(() => {
     const map = {};
-    orders.forEach(o =>
+    orders.forEach((o) =>
       o.items.forEach(({ product: p, qty }) => {
         const cat = p.category || 'Other';
-        map[cat] = (map[cat] || 0) + p.price_inr * qty;
+        map[cat] = (map[cat] || 0) + (p.price_inr || 0) * (qty || 1);
       })
     );
     return Object.entries(map)
@@ -82,258 +174,534 @@ export default function UserProfile() {
       .slice(0, 7);
   }, [orders]);
 
-  // Daily spending for the last 14 days (line chart)
+  // Daily spending aggregation for the last 14 days (area chart)
   const dailySpend = useMemo(() => {
     const days = 14;
-    const map  = {};
+    const map = {};
     for (let d = days - 1; d >= 0; d--) {
-      const date = new Date(referenceTimestamp - d * 86400000).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+      const date = new Date(referenceTimestamp - d * 86400000).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+      });
       map[date] = 0;
     }
-    orders.forEach(o => {
-      const date = new Date(o.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+    orders.forEach((o) => {
+      const date = new Date(o.date).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+      });
       if (map[date] !== undefined) map[date] += o.total || 0;
     });
     return Object.entries(map).map(([date, spend]) => ({ date, spend }));
   }, [orders, referenceTimestamp]);
 
-  // Top categories by order count
-  const topCategories = useMemo(() => {
-    const map = {};
-    orders.forEach(o =>
-      o.items.forEach(({ product: p }) => {
-        map[p.category] = (map[p.category] || 0) + 1;
-      })
-    );
-    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 3);
-  }, [orders]);
-
+  // Member join date formatted
   const joinDate = useMemo(() => {
     const d = new Date(referenceTimestamp);
     d.setMonth(d.getMonth() - 2);
-    return d.toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   }, [referenceTimestamp]);
 
+  // User skin diagnostic parameters
+  const skinType = user?.skinType || null;
+  const skinTone = user?.skinTone || null;
+  const rawConcerns = user?.concerns || [];
+  const concernsList = Array.isArray(rawConcerns)
+    ? rawConcerns
+    : typeof rawConcerns === 'string'
+      ? rawConcerns.split(',').map((c) => c.trim()).filter(Boolean)
+      : [];
+
+  const hasSkinProfile = Boolean(skinType || concernsList.length > 0 || user?.onboardingCompleted);
+
   return (
-    <div style={{ minHeight:'100vh', background:'#FDFBF7', fontFamily:'"Inter",sans-serif' }}>
+    <div className="min-h-screen bg-[#FDFBF7] font-sans text-[#231E1B]">
       <Navbar />
 
-      <div style={{ maxWidth:1100, margin:'0 auto', padding:'32px 20px 100px' }}>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 pb-24">
 
-        {/* Profile Header */}
-        <div style={{
-          background:'linear-gradient(135deg,#E8633A 0%,#c94f2a 100%)',
-          borderRadius:24, padding:'32px 36px', marginBottom:28,
-          display:'flex', alignItems:'center', gap:24, flexWrap:'wrap',
-          position:'relative', overflow:'hidden',
-        }}>
-          <div style={{
-            position:'absolute', right:-30, top:-30,
-            width:200, height:200, borderRadius:'50%', background:'rgba(255,255,255,.07)',
-          }} />
-          <div style={{
-            position:'absolute', right:60, bottom:-60,
-            width:150, height:150, borderRadius:'50%', background:'rgba(255,255,255,.05)',
-          }} />
-          <div style={{
-            width:80, height:80, borderRadius:'50%',
-            background:'rgba(255,255,255,.2)',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            fontSize:32, fontWeight:800, color:'#fff', flexShrink:0,
-          }}>
-            {user?.name?.[0]?.toUpperCase() || 'U'}
-          </div>
-          <div style={{ flex:1 }}>
-            <h1 style={{ margin:'0 0 4px', color:'#fff', fontFamily:'"Playfair Display",serif', fontSize:26, fontWeight:800 }}>
-              {user?.name || 'Glow More Member'}
-            </h1>
-            <p style={{ margin:'0 0 8px', color:'rgba(255,255,255,.8)', fontSize:14 }}>{user?.email}</p>
-            <p style={{ margin:0, color:'rgba(255,255,255,.65)', fontSize:12 }}>Member since {joinDate}</p>
-          </div>
-          {topCategories[0] && (
-            <div style={{
-              background:'rgba(255,255,255,.15)', borderRadius:16, padding:'12px 20px',
-              backdropFilter:'blur(10px)', textAlign:'center',
-            }}>
-              <div style={{ fontSize:11, color:'rgba(255,255,255,.7)', fontWeight:600, letterSpacing:.5, textTransform:'uppercase', marginBottom:4 }}>Top Category</div>
-              <div style={{ fontSize:16, fontWeight:800, color:'#fff' }}>{topCategories[0][0] || '—'}</div>
-            </div>
-          )}
-          <button onClick={() => navigate('/onboarding')} style={{
-            position:'absolute', top:20, right:20,
-            background:'rgba(255,255,255,.2)', border:'none', borderRadius:12,
-            width:36, height:36, cursor:'pointer',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            transition: 'background .2s',
-          }} onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,.3)'} onMouseLeave={e => e.currentTarget.style.background='rgba(255,255,255,.2)'} title="Edit Preferences">
-            <Edit3 size={16} color="#fff" />
-          </button>
+        {/* ── Breadcrumb & Page Meta ── */}
+        <div className="flex items-center gap-2 text-xs font-semibold text-[#8A7D75] mb-6">
+          <Link to="/shop" className="hover:text-[#E8633A] transition-colors">
+            Home
+          </Link>
+          <ChevronRight className="w-3 h-3 text-[#B8ACA2]" />
+          <span className="text-[#231E1B] font-bold">My Account</span>
         </div>
 
-        {/* Stats & Personalization Grid */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:14, marginBottom:28 }}>
-          <StatCard icon={<TrendingUp size={22}/>} label="Total Spent" value={`₹${Math.round(totalSpent).toLocaleString('en-IN')}`} color="#E8633A" bg="#fde8d8" />
-          <StatCard icon={<Package size={22}/>} label="Total Orders" value={orders.length} color="#3A7BD5" bg="#e8f0fb" />
-          <StatCard icon={<ShoppingBag size={22}/>} label="Items Purchased" value={totalItems} color="#27AE60" bg="#e8f5ec" />
-          <StatCard icon={<Heart size={22}/>} label="Wishlist Items" value={Object.keys(wishlist).length} color="#8B5E83" bg="#f0e8f5" />
-          <StatCard icon={<Award size={22}/>} label="Avg Order Value" value={`₹${avgOrder.toLocaleString('en-IN')}`} color="#F39C12" bg="#fef5e7" />
-          
-          <button onClick={() => navigate('/onboarding')} style={{
-            background:'#fff', border:'1.5px dashed #E8633A', borderRadius:20, padding:'20px 22px',
-            display:'flex', alignItems:'center', gap:16, cursor:'pointer',
-            transition:'all .2s', textAlign:'left',
-          }} onMouseEnter={e => { e.currentTarget.style.background='#fde8d8'; e.currentTarget.style.borderColor='#c94f2a'; }} onMouseLeave={e => { e.currentTarget.style.background='#fff'; e.currentTarget.style.borderColor='#E8633A'; }}>
-            <div style={{ width:52, height:52, borderRadius:16, background:'#fde8d8', color:'#E8633A', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              <Edit3 size={24} />
-            </div>
-            <div>
-              <div style={{ fontSize:16, fontWeight:800, color:'#231E1B', lineHeight:1.1 }}>Personalize</div>
-              <div style={{ fontSize:11, fontWeight:600, color:'#665D57', marginTop:4 }}>Update your skin type & preferences</div>
-            </div>
-          </button>
-        </div>
+        {/* ==================================================================
+            1. HERO IDENTITY CARD — Warm Espresso / Terracotta Obsidian Card
+            ================================================================== */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#231E1B] via-[#2E2520] to-[#1E1916] text-white p-6 sm:p-8 mb-8 border border-[#3E342D] shadow-xl shadow-[#231E1B]/15">
+          {/* Ambient luminous gradients */}
+          <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#E8633A]/20 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 left-1/3 w-60 h-60 rounded-full bg-[#D44E28]/15 blur-3xl pointer-events-none" />
 
-        {/* Charts Row */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:28 }} className="charts-grid">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
 
-          {/* Spending by Category – Pie */}
-          <div style={{ background:'#fff', border:'1.5px solid #EADFD4', borderRadius:24, padding:'22px 20px' }}>
-            <h3 style={{ margin:'0 0 4px', fontWeight:800, fontSize:15, color:'#231E1B' }}>Spending by Category</h3>
-            <p style={{ margin:'0 0 16px', fontSize:12, color:'#665D57' }}>Percentage of total spend per category</p>
-            {categorySpend.length === 0 ? (
-              <div style={{ textAlign:'center', padding:'32px 0', color:'#EADFD4', fontSize:13 }}>
-                Place an order to see your spending breakdown
+            {/* Left: User Avatar & Editorial Details */}
+            <div className="flex items-center gap-4 sm:gap-6">
+              {/* Avatar Circle with Initial */}
+              <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-2xl bg-gradient-to-br from-[#E8633A] to-[#D44E28] flex items-center justify-center text-white text-2xl sm:text-3xl font-extrabold shadow-md shadow-[#E8633A]/30 ring-4 ring-white/10 shrink-0">
+                {user?.name?.[0]?.toUpperCase() || 'U'}
               </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie data={categorySpend} cx="50%" cy="50%" innerRadius={55} outerRadius={90}
-                    paddingAngle={3} dataKey="value">
-                    {categorySpend.map((entry, i) => (
-                      <Cell key={entry.name} fill={PALETTE[i % PALETTE.length]} />
-                    ))}
-                  </Pie>
-                  <PieTooltip formatter={(val) => [`₹${Number(val).toLocaleString('en-IN')}`, 'Spent']} />
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize:11 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
 
-          {/* Daily Spending – Area/Line */}
-          <div style={{ background:'#fff', border:'1.5px solid #EADFD4', borderRadius:24, padding:'22px 20px' }}>
-            <h3 style={{ margin:'0 0 4px', fontWeight:800, fontSize:15, color:'#231E1B' }}>Spending Over Time</h3>
-            <p style={{ margin:'0 0 16px', fontSize:12, color:'#665D57' }}>Your purchases in the last 14 days</p>
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={dailySpend}>
-                <defs>
-                  <linearGradient id="spendGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#E8633A" stopOpacity={0.25}/>
-                    <stop offset="95%" stopColor="#E8633A" stopOpacity={0.02}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F0E8E0" />
-                <XAxis dataKey="date" tick={{ fontSize:9, fill:'#665D57' }} tickLine={false} axisLine={false} interval={3} />
-                <YAxis tick={{ fontSize:9, fill:'#665D57' }} tickLine={false} axisLine={false}
-                  tickFormatter={v => `₹${v}`} />
-                <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="spend" stroke="#E8633A" strokeWidth={2.5}
-                  fill="url(#spendGrad)" dot={{ fill:'#E8633A', r:3 }} activeDot={{ r:6 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Recent Orders */}
-        {orders.length > 0 ? (
-          <div style={{ background:'#fff', border:'1.5px solid #EADFD4', borderRadius:24, padding:'22px 22px', marginBottom:20 }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-              <h3 style={{ margin:0, fontWeight:800, fontSize:15, color:'#231E1B' }}>Recent Orders</h3>
-              <button onClick={() => navigate('/orders')} style={{
-                background:'none', border:'none', color:'#E8633A', fontWeight:700, fontSize:13, cursor:'pointer',
-              }}>View All →</button>
-            </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              {orders.slice(0, 3).map(order => (
-                <div key={order.id} style={{
-                  display:'flex', alignItems:'center', justifyContent:'space-between',
-                  padding:'12px 14px', background:'#F6EFE9', borderRadius:14, flexWrap:'wrap', gap:8,
-                }}>
-                  <div>
-                    <div style={{ fontWeight:700, fontSize:13, color:'#231E1B' }}>{order.id}</div>
-                    <div style={{ fontSize:11, color:'#665D57' }}>
-                      {new Date(order.date).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}
-                      · {order.items.length} items
-                    </div>
-                  </div>
-                  <div style={{ fontWeight:800, fontSize:15, color:'#E8633A' }}>
-                    ₹{order.total?.toLocaleString('en-IN')}
-                  </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#E8633A]/25 border border-[#E8633A]/40 text-[#FFA285] text-[11px] font-bold tracking-wide">
+                    <Sparkles className="w-3 h-3" />
+                    Glow Tier Member
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[11px] text-[#A89D95]">
+                    <Calendar className="w-3 h-3" />
+                    Since {joinDate}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div style={{ background:'#fff', border:'1.5px solid #EADFD4', borderRadius:24, padding:'32px 22px', textAlign:'center', marginBottom:20 }}>
-            <Package size={42} color="#EADFD4" style={{ margin:'0 auto 12px', display:'block' }} />
-            <h3 style={{ margin:'0 0 6px', fontWeight:800, fontSize:16, color:'#231E1B' }}>No orders placed yet</h3>
-            <p style={{ margin:'0 0 16px', fontSize:13, color:'#665D57' }}>Your order history and spend analytics will populate here as you order products.</p>
-            <button onClick={() => navigate('/shop')} style={{
-              padding:'10px 24px', background:'#E8633A', color:'#fff',
-              border:'none', borderRadius:24, fontSize:13, fontWeight:700, cursor:'pointer',
-            }}>Browse Products →</button>
-          </div>
-        )}
 
-        {/* Wishlist preview */}
-        {Object.values(wishlist).length > 0 && (
-          <div style={{ background:'#fff', border:'1.5px solid #EADFD4', borderRadius:24, padding:'22px 22px' }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-              <h3 style={{ margin:0, fontWeight:800, fontSize:15, color:'#231E1B' }}>Wishlist Highlights</h3>
-              <button onClick={() => navigate('/wishlist')} style={{ background:'none', border:'none', color:'#E8633A', fontWeight:700, fontSize:13, cursor:'pointer' }}>
-                View All →
+                <h1 className="text-2xl sm:text-3xl font-bold font-brand text-white tracking-tight leading-tight">
+                  {user?.name || 'Glow More Member'}
+                </h1>
+
+                <p className="text-xs sm:text-sm text-[#C4B7AC] mt-0.5">
+                  {user?.email || 'member@glowmore.com'}
+                </p>
+
+                {/* Badges row */}
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  {skinType && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-white/90 text-xs font-semibold backdrop-blur-xs">
+                      <Droplets className="w-3 h-3 text-[#FFA285]" />
+                      {skinType.charAt(0).toUpperCase() + skinType.slice(1)} Skin
+                    </span>
+                  )}
+                  {skinTone && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-white/90 text-xs font-semibold backdrop-blur-xs">
+                      Tone: {skinTone.charAt(0).toUpperCase() + skinTone.slice(1)}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[#86EFAC] text-xs font-semibold backdrop-blur-xs">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Verified Profile
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Quick Action Buttons */}
+            <div className="flex flex-row md:flex-col gap-2.5 shrink-0">
+              <button
+                onClick={() => navigate('/onboarding')}
+                className="h-10 px-5 rounded-full bg-gradient-to-r from-[#E8633A] to-[#D44E28] hover:from-[#F0724A] hover:to-[#DE5731] text-white text-xs font-bold shadow-md shadow-[#E8633A]/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span>{hasSkinProfile ? 'Update Skin Profile' : 'Personalize Skin Profile'}</span>
+              </button>
+
+              <button
+                onClick={() => navigate('/rewards')}
+                className="h-10 px-4 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <Coins className="w-3.5 h-3.5 text-[#FBBF24]" />
+                <span>{coinBalance ?? 0} Joyory Coins</span>
               </button>
             </div>
-            <div style={{ display:'flex', gap:12, overflowX:'auto', scrollbarWidth:'none' }}>
-              {Object.values(wishlist).slice(0, 6).map(p => {
-                const src = imgSrc(p);
-                const is3D = Boolean(p?.is_3d || p?.cloudinary_link?.endsWith('.glb'));
-                return (
-                  <div key={p.id} onClick={() => navigate(`/product/${p.id}`)} style={{
-                    flexShrink:0, width:120, cursor:'pointer',
-                    background:'#F6EFE9', borderRadius:14, padding:'10px 10px 12px', textAlign:'center',
-                    border:'1px solid #EADFD4', transition:'transform .2s',
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.transform='translateY(-3px)'}
-                    onMouseLeave={e => e.currentTarget.style.transform=''}
-                  >
-                    <div style={{ width:48, height:48, margin:'0 auto 6px', borderRadius:10, overflow:'hidden', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      {src ? (
-                        <img src={src} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => e.target.style.display='none'} />
-                      ) : (
-                        <span style={{ fontSize:22 }}>{is3D ? '🧊' : '✨'}</span>
-                      )}
-                    </div>
-                    <div style={{ fontSize:10, fontWeight:600, color:'#231E1B', lineHeight:1.3,
-                      display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
-                      {p.name}
-                    </div>
-                    <div style={{ fontSize:11, fontWeight:800, color:'#E8633A', marginTop:4 }}>
-                      ₹{p.price_inr?.toLocaleString('en-IN')}
-                    </div>
+          </div>
+        </div>
+
+        {/* ==================================================================
+            2. BALANCED 4-KPI METRIC GRID (No Broken Wrapping!)
+            ================================================================== */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-8">
+          <StatCard
+            icon={<TrendingUp size={22} />}
+            label="Total Spent"
+            value={`₹${Math.round(totalSpent).toLocaleString('en-IN')}`}
+            sub="Lifetime Purchases"
+            color="#E8633A"
+            bg="#FDE8D8"
+          />
+          <StatCard
+            icon={<Package size={22} />}
+            label="Total Orders"
+            value={orders.length}
+            sub={orders.length > 0 ? `Avg ₹${avgOrder.toLocaleString('en-IN')}/order` : '0 Orders Placed'}
+            color="#3A7BD5"
+            bg="#E8F0FB"
+          />
+          <StatCard
+            icon={<Heart size={22} />}
+            label="Wishlist Saved"
+            value={Object.keys(wishlist).length}
+            sub="Saved Favorites"
+            color="#8B5E83"
+            bg="#F0E8F5"
+          />
+          <StatCard
+            icon={<Coins size={22} />}
+            label="Joyory Rewards"
+            value={coinBalance !== null ? coinBalance : 0}
+            sub="Coins Available"
+            color="#D97706"
+            bg="#FEF3C7"
+          />
+        </div>
+
+        {/* ==================================================================
+            3. DEDICATED AI SKIN PROFILE & INTELLIGENCE SECTION
+            ================================================================== */}
+        <div className="bg-white rounded-3xl border border-[#EADFD4] p-6 sm:p-7 mb-8 shadow-2xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#F5EFE9]">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-6 h-6 rounded-lg bg-[#E8633A]/10 text-[#E8633A] flex items-center justify-center">
+                  <Sparkles className="w-3.5 h-3.5" />
+                </span>
+                <h2 className="text-lg font-bold font-brand text-[#231E1B]">
+                  AI Skin Intelligence Diagnostic
+                </h2>
+              </div>
+              <p className="text-xs text-[#665D57]">
+                Real-time clinical compatibility profiling used across all product match scores.
+              </p>
+            </div>
+
+            <button
+              onClick={() => navigate('/onboarding')}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#E8633A] hover:text-[#D44E28] hover:underline cursor-pointer self-start sm:self-auto"
+            >
+              <span>{hasSkinProfile ? 'Edit Preferences' : 'Take 2-Min Skin Diagnostic'}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Diagnostic Content */}
+          {hasSkinProfile ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-5">
+              {/* Trait 1: Skin Type */}
+              <div className="p-4 rounded-2xl bg-[#FAF6F2] border border-[#EADFD4]/70">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#8A7D75] uppercase tracking-wider mb-1">
+                  <Droplets className="w-3.5 h-3.5 text-[#E8633A]" />
+                  Skin Type
+                </div>
+                <div className="text-base font-extrabold text-[#231E1B]">
+                  {skinType ? skinType.charAt(0).toUpperCase() + skinType.slice(1) : 'Balanced'}
+                </div>
+                <div className="text-[11px] text-[#665D57] mt-1">
+                  Calibrated for tailored moisture retention and barrier defense.
+                </div>
+              </div>
+
+              {/* Trait 2: Primary Concerns */}
+              <div className="p-4 rounded-2xl bg-[#FAF6F2] border border-[#EADFD4]/70">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#8A7D75] uppercase tracking-wider mb-1">
+                  <Target className="w-3.5 h-3.5 text-[#E8633A]" />
+                  Active Focus
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {concernsList.length > 0 ? (
+                    concernsList.slice(0, 3).map((concern, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2.5 py-0.5 rounded-md bg-white border border-[#EADFD4] text-[#231E1B] text-[11px] font-bold shadow-2xs"
+                      >
+                        {concern.charAt(0).toUpperCase() + concern.slice(1)}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs font-bold text-[#231E1B]">General Barrier Care</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Trait 3: Algorithm Calibration */}
+              <div className="p-4 rounded-2xl bg-[#FAF6F2] border border-[#EADFD4]/70">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#8A7D75] uppercase tracking-wider mb-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#27AE60]" />
+                  Compatibility Engine
+                </div>
+                <div className="text-base font-extrabold text-[#27AE60]">
+                  Active & Calibrated
+                </div>
+                <div className="text-[11px] text-[#665D57] mt-1">
+                  Every product card displays instant match percentages (e.g. 95% Match).
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#FDE8D8] text-[#E8633A] flex items-center justify-center shrink-0">
+                  <Compass className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-[#231E1B]">
+                    No skin profile calibrated yet
                   </div>
-                );
-              })}
+                  <div className="text-xs text-[#665D57]">
+                    Take our 2-minute diagnostic to unlock precision formulation compatibility and ingredient alerts.
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/onboarding')}
+                className="h-10 px-5 rounded-full bg-[#E8633A] hover:bg-[#D44E28] text-white text-xs font-bold shadow-sm shadow-[#E8633A]/25 transition-all cursor-pointer shrink-0"
+              >
+                Start Diagnostic →
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ==================================================================
+            4. TWO-COLUMN ANALYTICS & ACTIVITY DASHBOARD
+            ================================================================== */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+          {/* ── Left Column: Spending Analytics ── */}
+          <div className="space-y-6">
+
+            {/* Category Breakdown Chart */}
+            <div className="bg-white rounded-3xl border border-[#EADFD4] p-6 shadow-2xs">
+              <div className="mb-4">
+                <h3 className="text-base font-bold text-[#231E1B]">
+                  Spending by Category
+                </h3>
+                <p className="text-xs text-[#665D57]">
+                  Distribution of routine investments across skincare categories
+                </p>
+              </div>
+
+              {categorySpend.length === 0 ? (
+                <div className="h-60 rounded-2xl bg-[#FAF6F2]/70 border border-dashed border-[#EADFD4] flex flex-col items-center justify-center p-6 text-center">
+                  <ShoppingBag className="w-8 h-8 text-[#C4B7AC] mb-2 stroke-[1.5]" />
+                  <div className="text-xs font-bold text-[#231E1B]">No category data yet</div>
+                  <p className="text-[11px] text-[#8A7D75] max-w-xs mt-1">
+                    Once you place your first order, your category allocation chart will appear here.
+                  </p>
+                  <button
+                    onClick={() => navigate('/shop')}
+                    className="mt-3 px-4 py-1.5 rounded-full bg-white border border-[#EADFD4] text-xs font-bold text-[#E8633A] hover:bg-[#FAF6F2] transition-colors cursor-pointer"
+                  >
+                    Explore Catalog →
+                  </button>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={240}>
+                  <PieChart>
+                    <Pie
+                      data={categorySpend}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={85}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {categorySpend.map((entry, i) => (
+                        <Cell key={entry.name} fill={PALETTE[i % PALETTE.length]} />
+                      ))}
+                    </Pie>
+                    <PieTooltip formatter={(val) => [`₹${Number(val).toLocaleString('en-IN')}`, 'Spent']} />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {/* 14-Day Purchasing Trend */}
+            <div className="bg-white rounded-3xl border border-[#EADFD4] p-6 shadow-2xs">
+              <div className="mb-4">
+                <h3 className="text-base font-bold text-[#231E1B]">
+                  Purchasing Trend (Last 14 Days)
+                </h3>
+                <p className="text-xs text-[#665D57]">
+                  Timeline of skincare routine orders
+                </p>
+              </div>
+
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={dailySpend}>
+                  <defs>
+                    <linearGradient id="spendGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#E8633A" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#E8633A" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F0E8E0" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 9, fill: '#665D57' }}
+                    tickLine={false}
+                    axisLine={false}
+                    interval={2}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 9, fill: '#665D57' }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) => `₹${v}`}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="spend"
+                    stroke="#E8633A"
+                    strokeWidth={2.5}
+                    fill="url(#spendGrad)"
+                    dot={{ fill: '#E8633A', r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
-        )}
-      </div>
 
-      <style>{`
-        @media(max-width:768px){
-          .charts-grid { grid-template-columns:1fr !important; }
-        }
-      `}</style>
+          {/* ── Right Column: Recent Orders & Wishlist Highlights ── */}
+          <div className="space-y-6">
+
+            {/* Recent Orders Card */}
+            <div className="bg-white rounded-3xl border border-[#EADFD4] p-6 shadow-2xs">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-bold text-[#231E1B]">Recent Orders</h3>
+                  <p className="text-xs text-[#665D57]">Track and view past routine shipments</p>
+                </div>
+                {orders.length > 0 && (
+                  <button
+                    onClick={() => navigate('/orders')}
+                    className="text-xs font-bold text-[#E8633A] hover:underline cursor-pointer"
+                  >
+                    View All →
+                  </button>
+                )}
+              </div>
+
+              {orders.length > 0 ? (
+                <div className="space-y-2.5">
+                  {orders.slice(0, 3).map((order) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center justify-between p-3.5 rounded-2xl bg-[#FAF6F2] border border-[#EADFD4]/70 hover:border-[#E8633A]/40 transition-all"
+                    >
+                      <div>
+                        <div className="text-xs font-bold text-[#231E1B]">{order.id}</div>
+                        <div className="text-[11px] text-[#665D57]">
+                          {new Date(order.date).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}{' '}
+                          · {order.items.length} items
+                        </div>
+                      </div>
+                      <div className="text-sm font-extrabold text-[#E8633A]">
+                        ₹{order.total?.toLocaleString('en-IN')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="h-44 rounded-2xl bg-[#FAF6F2]/70 border border-dashed border-[#EADFD4] flex flex-col items-center justify-center p-6 text-center">
+                  <Package className="w-8 h-8 text-[#C4B7AC] mb-2 stroke-[1.5]" />
+                  <div className="text-xs font-bold text-[#231E1B]">No orders placed yet</div>
+                  <p className="text-[11px] text-[#8A7D75] max-w-xs mt-1">
+                    Your order history, delivery status, and tracking info will appear here.
+                  </p>
+                  <button
+                    onClick={() => navigate('/shop')}
+                    className="mt-3 px-4 py-1.5 rounded-full bg-[#E8633A] text-white text-xs font-bold hover:bg-[#D44E28] transition-colors cursor-pointer"
+                  >
+                    Start Shopping
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Wishlist Highlights Card */}
+            <div className="bg-white rounded-3xl border border-[#EADFD4] p-6 shadow-2xs">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-bold text-[#231E1B]">Wishlist Highlights</h3>
+                  <p className="text-xs text-[#665D57]">Formulations staged for your routine</p>
+                </div>
+                {Object.values(wishlist).length > 0 && (
+                  <button
+                    onClick={() => navigate('/wishlist')}
+                    className="text-xs font-bold text-[#E8633A] hover:underline cursor-pointer"
+                  >
+                    View All ({Object.keys(wishlist).length}) →
+                  </button>
+                )}
+              </div>
+
+              {Object.values(wishlist).length > 0 ? (
+                <div className="grid grid-cols-3 gap-3">
+                  {Object.values(wishlist)
+                    .slice(0, 3)
+                    .map((p) => {
+                      const src = imgSrc(p);
+                      const is3D = Boolean(p?.is_3d || p?.cloudinary_link?.endsWith('.glb'));
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => navigate(`/product/${p.id}`)}
+                          className="group p-2.5 rounded-2xl bg-[#FAF6F2] border border-[#EADFD4]/70 hover:border-[#E8633A]/50 hover:shadow-xs transition-all cursor-pointer text-center"
+                        >
+                          <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-2xs group-hover:scale-105 transition-transform">
+                            {src ? (
+                              <img
+                                src={src}
+                                alt={p.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => (e.target.style.display = 'none')}
+                              />
+                            ) : (
+                              <span className="text-xl">{is3D ? '🧊' : '✨'}</span>
+                            )}
+                          </div>
+                          <div className="text-[11px] font-bold text-[#231E1B] line-clamp-1">
+                            {p.name}
+                          </div>
+                          <div className="text-[11px] font-extrabold text-[#E8633A] mt-0.5">
+                            ₹{p.price_inr?.toLocaleString('en-IN')}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              ) : (
+                <div className="h-32 rounded-2xl bg-[#FAF6F2]/70 border border-dashed border-[#EADFD4] flex flex-col items-center justify-center p-4 text-center">
+                  <Heart className="w-6 h-6 text-[#C4B7AC] mb-1.5 stroke-[1.5]" />
+                  <div className="text-xs font-bold text-[#231E1B]">Your wishlist is empty</div>
+                  <p className="text-[10px] text-[#8A7D75] mt-0.5">
+                    Click the heart icon on any product to save it here.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Luxury Concierge Navigation */}
+            <div className="p-4 rounded-2xl bg-[#FAF6F2] border border-[#EADFD4] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white border border-[#EADFD4] flex items-center justify-center text-[#E8633A]">
+                  <Coins className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-[#231E1B]">Glow More Rewards Club</div>
+                  <div className="text-[11px] text-[#665D57]">Redeem points for discounts & samples</div>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/rewards')}
+                className="px-3 py-1.5 rounded-full bg-white border border-[#EADFD4] text-xs font-bold text-[#E8633A] hover:bg-[#FAF6F2] transition-colors cursor-pointer"
+              >
+                View Perks →
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
+
