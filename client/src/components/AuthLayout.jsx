@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Leaf, ArrowLeft, ShieldCheck, Sparkles, Award } from 'lucide-react';
 
+// ============================================================================
+// AuthLayout — shared wrapper for Login and Signup pages.
+// Uses a 2-column layout (hero image left, form right) with a fixed minimum
+// height to prevent layout shifts when form content changes dynamically.
+// ============================================================================
 export default function AuthLayout({ children, activeTab, onTabChange }) {
   return (
     <div className="min-h-screen bg-[#F6EFE9] text-[#231E1B] flex flex-col justify-center selection:bg-[#E8633A] selection:text-white relative overflow-hidden">
@@ -11,13 +16,13 @@ export default function AuthLayout({ children, activeTab, onTabChange }) {
       <div className="ambient-orb ambient-orb--emerald" />
 
       {/* Main Container */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 my-auto">
-        <div className="overflow-hidden rounded-3xl bg-white/70 backdrop-blur-xl border border-[#E8DFD4] shadow-2xl grid grid-cols-1 lg:grid-cols-12 min-h-[640px]">
+      <div className="relative z-10 w-full max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 my-auto">
+        <div className="overflow-hidden rounded-3xl bg-white/70 backdrop-blur-xl border border-[#E8DFD4] shadow-2xl grid grid-cols-1 lg:grid-cols-12 min-h-[620px] lg:h-[680px]">
           
-          {/* ================================================================
+          {/* ==================================================================
               VISUAL COLUMN (Left on desktop)
-              ================================================================ */}
-          <div className="relative lg:col-span-5 bg-[#231E1B] text-white p-8 sm:p-10 flex flex-col justify-between overflow-hidden min-h-[320px] lg:min-h-[640px]">
+              ================================================================== */}
+          <div className="relative lg:col-span-5 bg-[#231E1B] text-white p-8 sm:p-10 flex flex-col justify-between overflow-hidden min-h-[280px] lg:min-h-0">
             {/* Background Luxury Skincare Image */}
             <img
               src="/assets/auth-hero.jpg"
@@ -30,7 +35,7 @@ export default function AuthLayout({ children, activeTab, onTabChange }) {
 
             {/* Top Logo & Tagline */}
             <div className="relative z-10">
-              <Link to="/" className="inline-flex items-center space-x-2.5 group">
+              <Link to="/" className="inline-flex items-center gap-2.5 group">
                 <div className="w-10 h-10 rounded-2xl bg-[#E8633A] flex items-center justify-center text-white shadow-md shadow-[#E8633A]/30 group-hover:scale-105 transition-transform">
                   <Leaf className="w-5 h-5" />
                 </div>
@@ -47,7 +52,7 @@ export default function AuthLayout({ children, activeTab, onTabChange }) {
 
             {/* Middle Feature Highlights (Desktop Only) */}
             <div className="relative z-10 hidden sm:block space-y-3 my-auto py-6">
-              <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-semibold text-white">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-semibold text-white">
                 <Sparkles className="w-3.5 h-3.5 text-[#FFB69E]" />
                 <span>60-Sec Skin Diagnostic Engine</span>
               </div>
@@ -62,13 +67,13 @@ export default function AuthLayout({ children, activeTab, onTabChange }) {
 
             {/* Bottom Glassmorphic Badges */}
             <div className="relative z-10 pt-4 border-t border-white/15 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#8BB59A]" />
                 <span className="text-[11px] font-medium text-white/90">
                   Dermatologist Approved
                 </span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2">
                 <Award className="w-4 h-4 text-[#FFB69E]" />
                 <span className="text-[11px] font-medium text-white/90">
                   98.4% Accuracy Score
@@ -77,15 +82,17 @@ export default function AuthLayout({ children, activeTab, onTabChange }) {
             </div>
           </div>
 
-          {/* ================================================================
+          {/* ==================================================================
               FORM COLUMN (Right on desktop)
-              ================================================================ */}
-          <div className="lg:col-span-7 p-6 sm:p-10 lg:p-12 flex flex-col justify-between bg-[#FDFBF7]/90">
+              Fixed min-height so the container never jumps when password
+              strength chips, error messages, etc. appear/disappear.
+              ================================================================== */}
+          <div className="lg:col-span-7 p-6 sm:p-8 lg:p-10 flex flex-col justify-between bg-[#FDFBF7]/90">
             {/* Top Bar: Back Link & Navigation */}
             <div className="flex items-center justify-between pb-4 border-b border-[#EADFD4]">
               <Link
                 to="/"
-                className="inline-flex items-center space-x-1.5 text-xs font-bold text-[#665D57] hover:text-[#E8633A] transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#665D57] hover:text-[#E8633A] transition-colors"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Back to Experience</span>
@@ -101,7 +108,7 @@ export default function AuthLayout({ children, activeTab, onTabChange }) {
                       onTabChange('login');
                     }
                   }}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 ${
                     activeTab === 'login'
                       ? 'bg-white text-[#231E1B] shadow-sm'
                       : 'text-[#665D57] hover:text-[#231E1B]'
@@ -117,7 +124,7 @@ export default function AuthLayout({ children, activeTab, onTabChange }) {
                       onTabChange('signup');
                     }
                   }}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 ${
                     activeTab === 'signup'
                       ? 'bg-white text-[#231E1B] shadow-sm'
                       : 'text-[#665D57] hover:text-[#231E1B]'
@@ -128,8 +135,8 @@ export default function AuthLayout({ children, activeTab, onTabChange }) {
               </div>
             </div>
 
-            {/* Form Slot */}
-            <div className="py-6 my-auto max-w-md w-full mx-auto">
+            {/* Form Slot — vertically centered, capped width */}
+            <div className="py-5 my-auto max-w-md w-full mx-auto">
               {children}
             </div>
 

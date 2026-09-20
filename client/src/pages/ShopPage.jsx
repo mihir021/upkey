@@ -43,15 +43,25 @@ export default function ShopPage() {
 
   // Fetch featured (top 8 by rating) and top-rated
   useEffect(() => {
-    setLoading(true);
+    let isMounted = true;
+
     Promise.all([
       api.get('/products?sort=rating&limit=8'),
       api.get('/products?sort=rating&limit=20&budget_tier=Premium'),
-    ]).then(([featRes, topRes]) => {
-      setFeatured(featRes.data.products || []);
-      setTopRated(topRes.data.products || []);
-    }).catch(console.error)
-      .finally(() => setLoading(false));
+    ])
+      .then(([featRes, topRes]) => {
+        if (!isMounted) return;
+        setFeatured(featRes.data.products || []);
+        setTopRated(topRes.data.products || []);
+      })
+      .catch(console.error)
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Fetch by selected category

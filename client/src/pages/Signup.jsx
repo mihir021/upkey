@@ -1,41 +1,81 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Mail, Lock, Eye, EyeOff, AlertCircle, Sparkles, ArrowRight, Check } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, AlertCircle, Sparkles, ArrowRight, Check, X } from 'lucide-react';
 import api from '../api/axios';
 import AuthLayout from '../components/AuthLayout';
 
-// Mirrors backend rule in server/src/middleware/validate.middleware.js.
+// ============================================================================
+// Password validation pattern — mirrors the backend rule in
+// server/src/middleware/validate.middleware.js so the client catches
+// invalid passwords before hitting the network.
+// ============================================================================
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * RequirementChip - static helper component declared outside render to comply with
+ * React Compiler & ESLint rules (react-hooks/static-components).
+ * Renders individual password requirement status with subtle luxury styling.
+ */
+function RequirementChip({ met, label, touched }) {
+  return (
+    <span
+      className="flex items-center gap-1.5 text-[11px] transition-colors duration-200"
+      style={{
+        color: touched ? (met ? '#047857' : '#9A3412') : '#8F8278',
+        fontWeight: touched && met ? 600 : 400,
+      }}
+    >
+      {touched ? (
+        met ? (
+          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+        ) : (
+          <X className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+        )
+      ) : (
+        <span className="w-1.5 h-1.5 rounded-full bg-[#CBBFB3] shrink-0 inline-block ml-1 mr-1" />
+      )}
+      <span>{label}</span>
+    </span>
+  );
+}
+
 function Signup() {
   const navigate = useNavigate();
+
+  // ---------- state ----------
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // ---------- handlers ----------
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
     if (error) setError('');
   }
 
-  // Password requirement checks for live visual indicators
-  const hasLength = form.password.length >= 8;
-  const hasUpper = /[A-Z]/.test(form.password);
-  const hasLower = /[a-z]/.test(form.password);
-  const hasNumber = /\d/.test(form.password);
+  // Live password strength indicator checks
+  const hasLength  = form.password.length >= 8;
+  const hasUpper   = /[A-Z]/.test(form.password);
+  const hasLower   = /[a-z]/.test(form.password);
+  const hasNumber  = /\d/.test(form.password);
   const hasSpecial = /[^A-Za-z0-9]/.test(form.password);
 
+  // Track whether the user has started typing a password for requirement cues
+  const passwordTouched = form.password.length > 0;
+
+  // ---------- validation ----------
   function validate() {
     if (!form.name.trim()) return 'Name is required.';
     if (!EMAIL_PATTERN.test(form.email)) return 'A valid email is required.';
     if (!PASSWORD_PATTERN.test(form.password)) {
-      return 'Password must be 8+ characters and include an uppercase letter, a lowercase letter, a number, and a special character.';
+      return 'Password must be 8+ characters with uppercase, lowercase, number, and special character.';
     }
     return '';
   }
 
+  // ---------- submit ----------
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -61,28 +101,29 @@ function Signup() {
     }
   }
 
+  // ======================= RENDER =======================
   return (
     <AuthLayout activeTab="signup" onTabChange={(tab) => navigate(`/${tab}`)}>
       <div className="w-full">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="inline-flex items-center space-x-2 px-2.5 py-1 rounded-full bg-[#E8633A]/10 text-[#E8633A] text-[11px] font-bold uppercase tracking-wider mb-2">
+        {/* ---- Header ---- */}
+        <div className="mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8633A]/10 text-[#E8633A] text-[11px] font-bold uppercase tracking-wider mb-2">
             <Sparkles className="w-3 h-3" />
             <span>Join Joyory Aura</span>
           </div>
-          <h1 className="text-3xl font-bold font-brand text-[#231E1B] tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold font-brand text-[#231E1B] tracking-tight">
             Sign Up
           </h1>
-          <p className="text-xs text-[#665D57] mt-1">
+          <p className="text-xs text-[#665D57] mt-1 leading-relaxed">
             Create your account to unlock personalized routine formulas, dupe matches, and member pricing.
           </p>
         </div>
 
-        {/* Form */}
+        {/* ---- Form ---- */}
         <form onSubmit={handleSubmit} noValidate className="space-y-3.5">
           {/* Full Name */}
           <div>
-            <label className="block text-xs font-bold text-[#4B443F] mb-1.5" htmlFor="name-input">
+            <label className="block text-xs font-bold text-[#4B443F] mb-1" htmlFor="signup-name">
               Full Name
             </label>
             <div className="relative">
@@ -90,20 +131,20 @@ function Signup() {
                 <User className="w-4 h-4" />
               </div>
               <input
-                id="name-input"
+                id="signup-name"
                 name="name"
                 placeholder="Name"
                 autoComplete="name"
                 value={form.name}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#EADFD4] rounded-2xl text-xs text-[#231E1B] placeholder-[#A49B93] focus:outline-none focus:ring-2 focus:ring-[#E8633A]/30 focus:border-[#E8633A] transition-all shadow-sm"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#EADFD4] rounded-xl text-sm text-[#231E1B] placeholder-[#A49B93] focus:outline-none focus:ring-2 focus:ring-[#E8633A]/30 focus:border-[#E8633A] transition-all duration-200 shadow-sm hover:border-[#D4C8BA]"
               />
             </div>
           </div>
 
           {/* Email Address */}
           <div>
-            <label className="block text-xs font-bold text-[#4B443F] mb-1.5" htmlFor="email-input">
+            <label className="block text-xs font-bold text-[#4B443F] mb-1" htmlFor="signup-email">
               Email Address
             </label>
             <div className="relative">
@@ -111,21 +152,21 @@ function Signup() {
                 <Mail className="w-4 h-4" />
               </div>
               <input
-                id="email-input"
+                id="signup-email"
                 name="email"
                 type="email"
                 placeholder="Email"
                 autoComplete="email"
                 value={form.email}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#EADFD4] rounded-2xl text-xs text-[#231E1B] placeholder-[#A49B93] focus:outline-none focus:ring-2 focus:ring-[#E8633A]/30 focus:border-[#E8633A] transition-all shadow-sm"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#EADFD4] rounded-xl text-sm text-[#231E1B] placeholder-[#A49B93] focus:outline-none focus:ring-2 focus:ring-[#E8633A]/30 focus:border-[#E8633A] transition-all duration-200 shadow-sm hover:border-[#D4C8BA]"
               />
             </div>
           </div>
 
           {/* Password */}
           <div>
-            <label className="block text-xs font-bold text-[#4B443F] mb-1.5" htmlFor="password-input">
+            <label className="block text-xs font-bold text-[#4B443F] mb-1" htmlFor="signup-password">
               Password
             </label>
             <div className="relative">
@@ -133,14 +174,14 @@ function Signup() {
                 <Lock className="w-4 h-4" />
               </div>
               <input
-                id="password-input"
+                id="signup-password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Password"
                 autoComplete="new-password"
                 value={form.password}
                 onChange={handleChange}
-                className="w-full pl-10 pr-11 py-2.5 bg-white border border-[#EADFD4] rounded-2xl text-xs text-[#231E1B] placeholder-[#A49B93] focus:outline-none focus:ring-2 focus:ring-[#E8633A]/30 focus:border-[#E8633A] transition-all shadow-sm"
+                className="w-full pl-10 pr-11 py-2.5 bg-white border border-[#EADFD4] rounded-xl text-sm text-[#231E1B] placeholder-[#A49B93] focus:outline-none focus:ring-2 focus:ring-[#E8633A]/30 focus:border-[#E8633A] transition-all duration-200 shadow-sm hover:border-[#D4C8BA]"
               />
               <button
                 type="button"
@@ -152,50 +193,42 @@ function Signup() {
               </button>
             </div>
 
-            {/* Live Password Strength Chips */}
-            {form.password.length > 0 && (
-              <div className="mt-2.5 p-2.5 bg-[#F6EFE9]/60 rounded-xl border border-[#EADFD4]/60 grid grid-cols-2 gap-1.5 text-[10px]">
-                <span className={`flex items-center space-x-1 ${hasLength ? 'text-emerald-700 font-bold' : 'text-[#8F8278]'}`}>
-                  <Check className={`w-3 h-3 ${hasLength ? 'text-emerald-600' : 'text-transparent'}`} />
-                  <span>8+ characters</span>
-                </span>
-                <span className={`flex items-center space-x-1 ${hasUpper ? 'text-emerald-700 font-bold' : 'text-[#8F8278]'}`}>
-                  <Check className={`w-3 h-3 ${hasUpper ? 'text-emerald-600' : 'text-transparent'}`} />
-                  <span>Uppercase letter</span>
-                </span>
-                <span className={`flex items-center space-x-1 ${hasLower ? 'text-emerald-700 font-bold' : 'text-[#8F8278]'}`}>
-                  <Check className={`w-3 h-3 ${hasLower ? 'text-emerald-600' : 'text-transparent'}`} />
-                  <span>Lowercase letter</span>
-                </span>
-                <span className={`flex items-center space-x-1 ${hasNumber && hasSpecial ? 'text-emerald-700 font-bold' : 'text-[#8F8278]'}`}>
-                  <Check className={`w-3 h-3 ${hasNumber && hasSpecial ? 'text-emerald-600' : 'text-transparent'}`} />
-                  <span>Number & special char</span>
-                </span>
-              </div>
-            )}
+            {/* ---- Password Strength Chips: Always rendered with fixed height to prevent layout shifts ---- */}
+            <div
+              className="mt-2 p-2 rounded-lg border grid grid-cols-2 gap-1 text-[11px] min-h-[48px] items-center transition-all duration-300"
+              style={{
+                background: passwordTouched ? 'rgba(246,239,233,0.7)' : 'rgba(246,239,233,0.3)',
+                borderColor: passwordTouched ? 'rgba(234,223,212,0.85)' : 'rgba(234,223,212,0.4)',
+              }}
+            >
+              <RequirementChip met={hasLength} label="8+ characters" touched={passwordTouched} />
+              <RequirementChip met={hasUpper} label="Uppercase letter" touched={passwordTouched} />
+              <RequirementChip met={hasLower} label="Lowercase letter" touched={passwordTouched} />
+              <RequirementChip met={hasNumber && hasSpecial} label="Number & special char" touched={passwordTouched} />
+            </div>
           </div>
 
-          {/* Error Message */}
+          {/* ---- Error Message: Stable slot to prevent template jumping ---- */}
           {error && (
-            <div className="flex items-start space-x-2 p-3.5 rounded-2xl bg-red-50/90 border border-red-200 text-red-700 text-xs animate-in fade-in duration-200">
+            <div className="flex items-start gap-2 p-2.5 rounded-xl bg-red-50/95 border border-red-200 text-red-700 text-xs animate-in fade-in duration-150">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
               <p className="leading-snug">{error}</p>
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* ---- Submit Button ---- */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 px-4 rounded-2xl bg-[#E8633A] hover:bg-[#D4552E] text-white text-xs font-bold shadow-lg shadow-[#E8633A]/25 transition-all flex items-center justify-center space-x-2 disabled:opacity-60 cursor-pointer mt-2"
+            className="w-full py-3 px-4 rounded-xl bg-[#E8633A] hover:bg-[#D4552E] active:scale-[0.98] text-white text-sm font-bold shadow-md shadow-[#E8633A]/20 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
           >
-            <span>{loading ? 'Signing up...' : 'Sign Up'}</span>
+            <span>{loading ? 'Creating account...' : 'Sign Up'}</span>
             {!loading && <ArrowRight className="w-4 h-4" />}
           </button>
         </form>
 
-        {/* Switch to Login */}
-        <p className="text-center text-xs text-[#665D57] mt-5">
+        {/* ---- Switch to Login ---- */}
+        <p className="text-center text-xs text-[#665D57] mt-4">
           Already have an account?{' '}
           <Link to="/login" className="font-bold text-[#E8633A] hover:underline">
             Log in

@@ -46,69 +46,19 @@ function Chip({ label, active, onClick }) {
   );
 }
 
-export default function ExplorePage() {
-  const [params, setParams] = useSearchParams();
-
-  const [search,      setSearch]     = useState(params.get('search') || '');
-  const [category,    setCategory]   = useState(params.get('category') || '');
-  const [budgetTier,  setBudgetTier] = useState(params.get('budget_tier') || '');
-  const [skinType,    setSkinType]   = useState('');
-  const [minPrice,    setMinPrice]   = useState(0);
-  const [maxPrice,    setMaxPrice]   = useState(5000);
-  const [sort,        setSort]       = useState(params.get('sort') || 'rating');
-  const [products,    setProducts]   = useState([]);
-  const [total,       setTotal]      = useState(0);
-  const [loading,     setLoading]    = useState(false);
-  const [page,        setPage]       = useState(1);
-  const [sidebarOpen, setSidebarOpen]= useState(false);
-  const limit = 24;
-  const searchInput = useRef();
-
-  const fetchProducts = useCallback(async (pg = 1, reset = true) => {
-    setLoading(true);
-    try {
-      const q = new URLSearchParams({
-        ...(search     ? { search }     : {}),
-        ...(category && category !== 'All' ? { category } : {}),
-        ...(budgetTier ? { budget_tier: budgetTier } : {}),
-        ...(skinType   ? { skin_type: skinType }   : {}),
-        min_price: minPrice, max_price: maxPrice,
-        sort, limit, page: pg,
-      });
-      const { data } = await api.get(`/products?${q}`);
-      setProducts(prev => reset ? (data.products || []) : [...prev, ...(data.products || [])]);
-      setTotal(data.total || 0);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  }, [search, category, budgetTier, skinType, minPrice, maxPrice, sort]);
-
-  // Re-fetch whenever filters change (reset to page 1)
-  useEffect(() => {
-    setPage(1);
-    fetchProducts(1, true);
-  }, [fetchProducts]);
-
-  function loadMore() {
-    const next = page + 1;
-    setPage(next);
-    fetchProducts(next, false);
-  }
-
-  function clearAll() {
-    setSearch(''); setCategory(''); setBudgetTier('');
-    setSkinType(''); setMinPrice(0); setMaxPrice(5000);
-    setSort('rating');
-  }
-
-  const activeFilters = [
-    search && `"${search}"`,
-    category && category !== 'All' && category,
-    budgetTier,
-    skinType,
-    (minPrice > 0 || maxPrice < 5000) && `₹${minPrice}–₹${maxPrice}`,
-  ].filter(Boolean);
-
-  const FilterPanel = () => (
+/**
+ * FilterPanel - extracted outside component to comply with React Compiler & ESLint rules.
+ * Renders filter controls for category, budget, skin type, and price range.
+ */
+function FilterPanel({
+  activeFilters, clearAll,
+  category, setCategory,
+  budgetTier, setBudgetTier,
+  skinType, setSkinType,
+  minPrice, setMinPrice,
+  maxPrice, setMaxPrice,
+}) {
+  return (
     <div style={{ background:'#fff', border:'1.5px solid #EADFD4', borderRadius:20, padding:20, position:'sticky', top:84 }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
         <span style={{ fontWeight:700, fontSize:15, color:'#231E1B' }}>Filters</span>
@@ -161,6 +111,109 @@ export default function ExplorePage() {
       </FilterSection>
     </div>
   );
+}
+
+export default function ExplorePage() {
+  const [params] = useSearchParams();
+
+  const [search,      setSearch]     = useState(params.get('search') || '');
+  const [category,    setCategory]   = useState(params.get('category') || '');
+  const [budgetTier,  setBudgetTier] = useState(params.get('budget_tier') || '');
+  const [skinType,    setSkinType]   = useState('');
+  const [minPrice,    setMinPrice]   = useState(0);
+  const [maxPrice,    setMaxPrice]   = useState(5000);
+  const [sort,        setSort]       = useState(params.get('sort') || 'rating');
+  const [products,    setProducts]   = useState([]);
+  const [total,       setTotal]      = useState(0);
+  const [loading,     setLoading]    = useState(false);
+  const [page,        setPage]       = useState(1);
+  const [sidebarOpen, setSidebarOpen]= useState(false);
+  const limit = 24;
+  const searchInput = useRef();
+
+  const fetchProducts = useCallback(async (pg = 1, reset = true) => {
+    setLoading(true);
+    if (reset) {
+      setPage(1);
+    }
+    try {
+      const q = new URLSearchParams({
+        ...(search     ? { search }     : {}),
+        ...(category && category !== 'All' ? { category } : {}),
+        ...(budgetTier ? { budget_tier: budgetTier } : {}),
+        ...(skinType   ? { skin_type: skinType }   : {}),
+        min_price: minPrice, max_price: maxPrice,
+        sort, limit, page: pg,
+      });
+      const { data } = await api.get(`/products?${q}`);
+      setProducts(prev => reset ? (data.products || []) : [...prev, ...(data.products || [])]);
+      setTotal(data.total || 0);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, [search, category, budgetTier, skinType, minPrice, maxPrice, sort]);
+
+  // Re-fetch whenever filters change (reset to page 1)
+  useEffect(() => {
+    let ignore = false;
+
+    async function load() {
+      // Defer state update to next tick so it doesn't trigger synchronous render cascades
+      await Promise.resolve();
+      if (ignore) return;
+      setLoading(true);
+
+      try {
+        const q = new URLSearchParams({
+          ...(search ? { search } : {}),
+          ...(category && category !== 'All' ? { category } : {}),
+          ...(budgetTier ? { budget_tier: budgetTier } : {}),
+          ...(skinType ? { skin_type: skinType } : {}),
+          min_price: minPrice,
+          max_price: maxPrice,
+          sort,
+          limit,
+          page: 1,
+        });
+        const { data } = await api.get(`/products?${q}`);
+        if (!ignore) {
+          setProducts(data.products || []);
+          setTotal(data.total || 0);
+          setPage(1);
+        }
+      } catch (e) {
+        console.error('Explore products fetch error:', e);
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, [search, category, budgetTier, skinType, minPrice, maxPrice, sort]);
+
+  function loadMore() {
+    const next = page + 1;
+    setPage(next);
+    fetchProducts(next, false);
+  }
+
+  function clearAll() {
+    setSearch(''); setCategory(''); setBudgetTier('');
+    setSkinType(''); setMinPrice(0); setMaxPrice(5000);
+    setSort('rating');
+  }
+
+  const activeFilters = [
+    search && `"${search}"`,
+    category && category !== 'All' && category,
+    budgetTier,
+    skinType,
+    (minPrice > 0 || maxPrice < 5000) && `₹${minPrice}–₹${maxPrice}`,
+  ].filter(Boolean);
 
   return (
     <div style={{ minHeight:'100vh', background:'#FDFBF7', fontFamily:'"Inter",sans-serif' }}>
@@ -227,7 +280,20 @@ export default function ExplorePage() {
         <div style={{ display:'flex', gap:24 }}>
           {/* Sidebar */}
           <div className="filter-sidebar" style={{ width:240, flexShrink:0 }}>
-            <FilterPanel />
+            <FilterPanel
+              activeFilters={activeFilters}
+              clearAll={clearAll}
+              category={category}
+              setCategory={setCategory}
+              budgetTier={budgetTier}
+              setBudgetTier={setBudgetTier}
+              skinType={skinType}
+              setSkinType={setSkinType}
+              minPrice={minPrice}
+              setMinPrice={setMinPrice}
+              maxPrice={maxPrice}
+              setMaxPrice={setMaxPrice}
+            />
           </div>
 
           {/* Mobile sidebar overlay */}
@@ -239,7 +305,20 @@ export default function ExplorePage() {
                 position:'absolute', left:0, top:0, bottom:0, width:300,
                 background:'#fff', overflowY:'auto', padding:20,
               }}>
-                <FilterPanel />
+                <FilterPanel
+                  activeFilters={activeFilters}
+                  clearAll={clearAll}
+                  category={category}
+                  setCategory={setCategory}
+                  budgetTier={budgetTier}
+                  setBudgetTier={setBudgetTier}
+                  skinType={skinType}
+                  setSkinType={setSkinType}
+                  minPrice={minPrice}
+                  setMinPrice={setMinPrice}
+                  maxPrice={maxPrice}
+                  setMaxPrice={setMaxPrice}
+                />
               </div>
             </div>
           )}

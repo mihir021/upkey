@@ -2,7 +2,9 @@ import { Suspense, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Sparkles, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import cosmeticJarUrl from '../../../cosmetic_jar.glb';
+// Reference the GLB 3D model placed in client/public/assets
+// This ensures Docker builds (context: ./client) and static Nginx serving resolve without errors.
+const COSMETIC_JAR_URL = '/assets/cosmetic_jar.glb';
 
 const SCENE_STOPS = [
   { at: 0, position: [0, 0.04, 0], rotation: [0.03, -0.18, -0.025], scale: 0.44 },
@@ -32,7 +34,7 @@ function getSceneTarget(progress) {
 
 /** Loads the supplied GLB once, then centers/scales it for the existing landing-page route. */
 function CosmeticJarAsset() {
-  const { scene } = useGLTF(cosmeticJarUrl);
+  const { scene } = useGLTF(COSMETIC_JAR_URL);
 
   const jar = useMemo(() => {
     const instance = scene.clone(true);
@@ -129,4 +131,4 @@ export default function HeroBottle3D({ scrollProgress = 0 }) {
   );
 }
 
-useGLTF.preload(cosmeticJarUrl);
+useGLTF.preload(COSMETIC_JAR_URL);

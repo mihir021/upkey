@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   PieChart, Pie, Cell, Tooltip as PieTooltip, ResponsiveContainer, Legend,
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area,
+  XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area,
 } from 'recharts';
 import { ShoppingBag, Heart, TrendingUp, Award, Package, Edit3 } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -11,6 +11,9 @@ import { useAuth } from '../context/AuthContext';
 
 const PALETTE = ['#E8633A','#8B5E83','#3A7BD5','#27AE60','#F39C12','#E74C3C','#16A085','#8E44AD'];
 
+/**
+ * StatCard - metric display block with luxury tinted icon backdrop
+ */
 function StatCard({ icon, label, value, sub, color = '#E8633A', bg = '#fde8d8' }) {
   return (
     <div style={{
@@ -29,10 +32,26 @@ function StatCard({ icon, label, value, sub, color = '#E8633A', bg = '#fde8d8' }
   );
 }
 
+/**
+ * CustomTooltip - extracted outside component to satisfy React Compiler & static component rules
+ */
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background:'#fff', border:'1.5px solid #EADFD4', borderRadius:12, padding:'10px 14px', boxShadow:'0 4px 20px rgba(0,0,0,.1)' }}>
+      <p style={{ margin:'0 0 4px', fontWeight:700, fontSize:12, color:'#231E1B' }}>{label}</p>
+      <p style={{ margin:0, fontWeight:800, fontSize:14, color:'#E8633A' }}>₹{Number(payload[0]?.value).toLocaleString('en-IN')}</p>
+    </div>
+  );
+}
+
 export default function UserProfile() {
   const navigate = useNavigate();
   const { user }   = useAuth();
-  const { orders, wishlist, cartTotal } = useCart();
+  const { orders, wishlist } = useCart();
+
+  // Stable reference timestamp stored once on mount to avoid impure Date calls during render
+  const [referenceTimestamp] = useState(() => Date.now());
 
   // ── Analytics computations ──────────────────────────────────────────────────
   const totalSpent = useMemo(() =>
@@ -62,9 +81,8 @@ export default function UserProfile() {
   const dailySpend = useMemo(() => {
     const days = 14;
     const map  = {};
-    const now  = Date.now();
     for (let d = days - 1; d >= 0; d--) {
-      const date = new Date(now - d * 86400000).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+      const date = new Date(referenceTimestamp - d * 86400000).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
       map[date] = 0;
     }
     orders.forEach(o => {
@@ -72,7 +90,7 @@ export default function UserProfile() {
       if (map[date] !== undefined) map[date] += o.total || 0;
     });
     return Object.entries(map).map(([date, spend]) => ({ date, spend }));
-  }, [orders]);
+  }, [orders, referenceTimestamp]);
 
   // Top categories by order count
   const topCategories = useMemo(() => {
@@ -86,20 +104,10 @@ export default function UserProfile() {
   }, [orders]);
 
   const joinDate = useMemo(() => {
-    const d = new Date();
+    const d = new Date(referenceTimestamp);
     d.setMonth(d.getMonth() - 2);
     return d.toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
-  }, []);
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div style={{ background:'#fff', border:'1.5px solid #EADFD4', borderRadius:12, padding:'10px 14px', boxShadow:'0 4px 20px rgba(0,0,0,.1)' }}>
-        <p style={{ margin:'0 0 4px', fontWeight:700, fontSize:12, color:'#231E1B' }}>{label}</p>
-        <p style={{ margin:0, fontWeight:800, fontSize:14, color:'#E8633A' }}>₹{Number(payload[0]?.value).toLocaleString('en-IN')}</p>
-      </div>
-    );
-  };
+  }, [referenceTimestamp]);
 
   return (
     <div style={{ minHeight:'100vh', background:'#FDFBF7', fontFamily:'"Inter",sans-serif' }}>

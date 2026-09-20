@@ -24,15 +24,26 @@ export default function Dashboard() {
   const totalSpent = orders.reduce((s, o) => s + (o.total || 0), 0);
   const wishCount  = Object.keys(wishlist).length;
 
-  // Load recently viewed products
+  // Load recently viewed products asynchronously without cascading render triggers
   useEffect(() => {
     if (!history.length) return;
-    setLoadingRecent(true);
+    let isMounted = true;
+
     Promise.all(
       history.slice(0, 6).map(id => api.get(`/products/${id}`).catch(() => null))
     ).then(results => {
-      setRecentProds(results.filter(Boolean).map(r => r.data));
-    }).finally(() => setLoadingRecent(false));
+      if (isMounted) {
+        setRecentProds(results.filter(Boolean).map(r => r.data));
+      }
+    }).finally(() => {
+      if (isMounted) {
+        setLoadingRecent(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, [history]);
 
   // Fetch trending

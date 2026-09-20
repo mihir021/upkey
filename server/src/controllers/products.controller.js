@@ -86,6 +86,8 @@ async function getCategories(req, res) {
     const categories = await Product.distinct('category');
     res.json(categories.filter(Boolean).sort());
   } catch (err) {
+    // Log unexpected errors for troubleshooting
+    console.error('getCategories error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 }
@@ -109,6 +111,8 @@ async function getRecommendations(req, res) {
 
     res.json(recs);
   } catch (err) {
+    // Log unexpected errors for troubleshooting
+    console.error('getRecommendations error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 }

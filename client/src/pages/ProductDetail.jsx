@@ -75,17 +75,30 @@ export default function ProductDetail() {
   const [copied, setCopied]     = useState(false);
 
   useEffect(() => {
-    setLoading(true);
+    let isMounted = true;
+
+    // Fetch product details and recommendations asynchronously
     Promise.all([
       api.get(`/products/${id}`),
       api.get(`/products/${id}/recommendations`),
-    ]).then(([pRes, rRes]) => {
-      setProduct(pRes.data);
-      setRecs(rRes.data || []);
-      viewProduct(id);
-    }).catch(console.error)
-      .finally(() => setLoading(false));
-  }, [id]);
+    ])
+      .then(([pRes, rRes]) => {
+        if (!isMounted) return;
+        setProduct(pRes.data);
+        setRecs(rRes.data || []);
+        viewProduct(id);
+      })
+      .catch((err) => {
+        console.error('Product fetch error:', err);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id, viewProduct]);
 
   if (loading) return (
     <div style={{ minHeight:'100vh', background:'#FDFBF7' }}>
