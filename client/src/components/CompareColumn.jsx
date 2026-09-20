@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Star, CheckCircle, X, Sparkles, ShieldCheck, Zap } from 'lucide-react';
+import { ShoppingBag, Star, CheckCircle, X, Sparkles, ShieldCheck, Zap, Box } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useCompare } from '../context/CompareContext';
+import Inline3DPreview, { CATEGORY_PASTELS } from './Inline3DPreview';
 
 /**
  * ==============================================================================
@@ -10,7 +11,8 @@ import { useCompare } from '../context/CompareContext';
  * ==============================================================================
  *
  * Displays a single product's clinical specifications, actives breakdown,
- * key differentiators, price-per-active value analysis, and action CTA.
+ * key differentiators, price-per-active value analysis, action CTA, and
+ * rich interactive 3D model preview or high-res product photography.
  */
 
 function imgSrc(product) {
@@ -43,6 +45,9 @@ export default function CompareColumn({
     product.cloudinary_link?.endsWith('.glb') ||
     product.cloudinary_link?.endsWith('.gltf')
   );
+
+  // Soft category background wash for clean aesthetic presentation
+  const pastelBg = CATEGORY_PASTELS[product.category] || '#FAF6F2';
 
   // Extract explicit active percentage or estimate clinical potency
   const nameMatch = product.name?.match(/(\d+(?:\.\d+)?%)/);
@@ -100,31 +105,54 @@ export default function CompareColumn({
           </button>
         </div>
 
-        {/* Product Visual */}
+        {/* Product Visual Area — Real Photography or Interactive 3D Model */}
         <div
-          onClick={() => navigate(`/product/${pid}`)}
-          className="w-full h-44 rounded-2xl bg-[#F6EFE9] overflow-hidden flex items-center justify-center cursor-pointer relative group mb-3"
+          className="w-full h-48 sm:h-52 rounded-2xl overflow-hidden flex items-center justify-center relative group mb-3 shadow-inner"
+          style={{ backgroundColor: pastelBg }}
         >
           {src ? (
             <img
               src={src}
               alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              onClick={() => navigate(`/product/${pid}`)}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+              onError={(e) => {
+                // If remote photo fails, gracefully avoid broken image display
+                e.target.style.display = 'none';
+              }}
             />
+          ) : is3D ? (
+            /* Real 3D Interactive Model Canvas */
+            <div className="w-full h-full cursor-grab active:cursor-grabbing">
+              <Inline3DPreview
+                modelUrl={product.cloudinary_link}
+                category={product.category}
+                pastelBg={pastelBg}
+              />
+            </div>
           ) : (
-            <div className="flex flex-col items-center justify-center text-center p-4">
-              <span className="text-3xl mb-1">🧊</span>
-              <span className="text-[10px] font-bold text-[#E8633A] uppercase tracking-wider">
-                {is3D ? '3D Interactive Model' : product.category}
+            /* Category Icon Graphic Fallback */
+            <div
+              onClick={() => navigate(`/product/${pid}`)}
+              className="flex flex-col items-center justify-center text-center p-4 cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-white/90 shadow-sm border border-white/80 flex items-center justify-center text-[#E8633A] mb-2">
+                <Box className="w-6 h-6 stroke-[2]" />
+              </div>
+              <span className="text-[11px] font-bold text-[#E8633A] uppercase tracking-wider">
+                {product.category || 'Skincare'}
               </span>
             </div>
           )}
+
+          {/* 3D Model Badge */}
           {is3D && (
-            <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-[#231E1B]/70 backdrop-blur-md text-white text-[9px] font-bold border border-white/20">
-              3D
+            <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-[#231E1B]/80 backdrop-blur-md text-white text-[9.5px] font-bold border border-white/20 z-10 pointer-events-none flex items-center gap-1 shadow-xs">
+              <Box className="w-3 h-3 text-[#E8633A]" /> 3D
             </span>
           )}
         </div>
+
 
         {/* Brand & Title */}
         <div className="text-[10px] font-bold uppercase tracking-widest text-[#E8633A]">

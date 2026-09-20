@@ -1,19 +1,17 @@
-import React, { useState, useRef, useEffect, Suspense, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, ShoppingBag, Star, Box, Plus, Check, Scale } from 'lucide-react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, OrbitControls, Environment, ContactShadows } from '@react-three/drei';
-import * as THREE from 'three';
 import { useCart } from '../context/CartContext';
 import { useCompare } from '../context/CompareContext';
+import Inline3DPreview, { CATEGORY_PASTELS, CATEGORY_COLORS } from './Inline3DPreview';
 
 /**
  * ==============================================================================
  * ProductCard Component — Luxury Tactile Editorial Card
  * ==============================================================================
  *
- * Now includes an inline 3D canvas preview for products that have .glb models,
+ * Includes an inline 3D canvas preview for products that have .glb models,
  * replacing the old flat placeholder icon. Uses:
  *   - IntersectionObserver for lazy-mount (only renders when visible)
  *   - frameloop="demand" for GPU efficiency
@@ -21,45 +19,12 @@ import { useCompare } from '../context/CompareContext';
  *   - Smooth auto-rotation on hover
  */
 
-// ── Constants ──────────────────────────────────────────────────────────
-const DEFAULT_MODEL_URL = '/assets/cosmetic_jar.glb';
-
 // Helper to determine if an image source is a photo (not a 3D GLB/GLTF model)
 function imgSrc(product) {
   const cl = product?.cloudinary_link || '';
   if (!cl || cl.endsWith('.glb') || cl.endsWith('.gltf')) return null;
   return cl;
 }
-
-// Sophisticated pastel washes for non-photo or 3D interactive products
-const CATEGORY_PASTELS = {
-  Cleanser:      '#FDF2EB',
-  Toner:         '#EAF3FB',
-  Serum:         '#F3ECF8',
-  Moisturizer:   '#EEF7F2',
-  Sunscreen:     '#FDF5EA',
-  Foundation:    '#F8EDE7',
-  Concealer:     '#F8F0E6',
-  Blush:         '#FAECF4',
-  Lipstick:      '#FAECEC',
-  'Lip Balm':    '#FDF2F2',
-  Mascara:       '#EEEEF9',
-  Eyeliner:      '#EEF2F9',
-  'Face Mask':   '#EEF8F4',
-  Exfoliator:    '#F9F6E9',
-  'Under-eye Cream': '#F4EEF9',
-  'Body Lotion': '#EEF8F6',
-};
-
-// Category-accent colour for 3D point light
-const CATEGORY_COLORS = {
-  Serum:         '#E8633A',
-  Moisturizer:   '#3FE08B',
-  Cleanser:      '#5BC4FF',
-  Toner:         '#B088F9',
-  Sunscreen:     '#FFCA28',
-  'Face Mask':   '#1DE9B6',
-};
 
 // Subtle formulation variant dots adjacent to price
 const VARIANT_SWATCHES = {
@@ -69,140 +34,6 @@ const VARIANT_SWATCHES = {
   Sunscreen:   ['#FAE0B0', '#E8633A'],
   default:     ['#EADFD4', '#E8633A'],
 };
-
-// ── Inline 3D Model Mesh (normalised & grounded) ───────────────────────
-function MiniProductMesh({ url }) {
-  const { scene } = useGLTF(url);
-  const ref = useRef();
-
-  // Clone, normalise scale + ground the model so its base sits directly on the shadow plane
-  const model = useMemo(() => {
-    const inst = scene.clone(true);
-    inst.traverse(n => {
-      if (n.isMesh) {
-        n.castShadow = true;
-        n.receiveShadow = true;
-      }
-    });
-    inst.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(inst);
-    const size = box.getSize(new THREE.Vector3());
-    const max = Math.max(size.x, size.y, size.z, 0.001);
-
-    // Scale so the largest dimension fits comfortably (~1.85 units)
-    // Leaves generous headroom so tall bottles are never clipped at the top
-    inst.scale.setScalar(1.85 / max);
-    inst.updateMatrixWorld(true);
-
-    const box2 = new THREE.Box3().setFromObject(inst);
-    const centre = box2.getCenter(new THREE.Vector3());
-
-    // Center horizontally (X) and in depth (Z)
-    inst.position.x -= centre.x;
-    inst.position.z -= centre.z;
-
-    // Ground the base of the model firmly at y = -0.75
-    // ContactShadows will be placed at exactly y = -0.75 so there is zero gap
-    inst.position.y -= box2.min.y; // base at y = 0
-    inst.position.y -= 0.75;       // base at y = -0.75
-    return inst;
-  }, [scene]);
-
-  // Gentle auto-rotation around Y axis only — no bobbing to prevent floating
-  useFrame(() => {
-    if (ref.current) ref.current.rotation.y += 0.005;
-  });
-
-  return (
-    <group ref={ref}>
-      <primitive object={model} />
-    </group>
-  );
-}
-
-// ── Error boundary for corrupted / unreachable GLB models ─────────────
-class ModelErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(err) {
-    console.warn('Card 3D model load failed, falling back:', err);
-  }
-  render() {
-    if (this.state.hasError) return this.props.fallback;
-    return this.props.children;
-  }
-}
-
-// ── Inline 3D Preview Canvas ──────────────────────────────────────────
-function Inline3DPreview({ modelUrl, category, pastelBg }) {
-  const accentColor = CATEGORY_COLORS[category] || '#E8633A';
-
-  // Resolve GLB URL: use product's cloudinary glb if valid, else fallback
-  const validUrl =
-    modelUrl && typeof modelUrl === 'string' && (modelUrl.includes('.glb') || modelUrl.includes('.gltf'))
-      ? modelUrl
-      : DEFAULT_MODEL_URL;
-
-  // Fallback component rendered when the real model fails
-  const fallbackJSX = <MiniProductMesh url={DEFAULT_MODEL_URL} />;
-
-  return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      {/* Accent glow ring behind model */}
-      <div
-        style={{
-          position: 'absolute', inset: 0,
-          background: `radial-gradient(ellipse at 50% 65%, ${accentColor}18 0%, transparent 65%)`,
-          pointerEvents: 'none', zIndex: 1,
-        }}
-      />
-
-      <Canvas
-        camera={{ position: [0, 0.4, 4.0], fov: 32 }}
-        dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: true }}
-        frameloop="demand"
-        style={{ width: '100%', height: '100%', background: pastelBg }}
-      >
-        {/* Lighting — lightweight for card thumbnails */}
-        <ambientLight intensity={1.8} />
-        <directionalLight position={[4, 6, 4]} intensity={2} />
-        <pointLight position={[-3, 2, 2]} intensity={1} color={accentColor} />
-
-        <Suspense fallback={null}>
-          <ModelErrorBoundary fallback={fallbackJSX}>
-            <MiniProductMesh url={validUrl} />
-          </ModelErrorBoundary>
-          {/* Ground contact shadow placed precisely at the model base (y = -0.75) */}
-          <ContactShadows
-            position={[0, -0.75, 0]}
-            opacity={0.35}
-            scale={4.5}
-            blur={1.8}
-            far={3}
-            color="#231E1B"
-          />
-          <Environment preset="city" />
-        </Suspense>
-
-        <OrbitControls
-          target={[0, 0.1, 0]}
-          enablePan={false}
-          enableZoom={false}
-          minPolarAngle={Math.PI / 4}
-          maxPolarAngle={(3 * Math.PI) / 4}
-          autoRotate
-          autoRotateSpeed={1.8}
-        />
-      </Canvas>
-    </div>
-  );
-}
 
 // ══════════════════════════════════════════════════════════════════════
 // Main ProductCard Component

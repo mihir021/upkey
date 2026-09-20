@@ -12,10 +12,12 @@ import {
   SlidersHorizontal,
   Info,
   CheckCircle2,
+  Box,
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import CompareColumn from '../components/CompareColumn';
 import LoadingScreen from '../components/LoadingScreen';
+import Inline3DPreview, { CATEGORY_PASTELS } from '../components/Inline3DPreview';
 import { useCompare } from '../context/CompareContext';
 import productsData from '../data/products.json';
 
@@ -364,13 +366,21 @@ export default function ComparePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 max-w-4xl mx-auto">
                 {/* Slot 1: Currently Staged Product */}
                 <div className="p-5 rounded-2xl bg-[#FAF6F2]/80 border border-[#EADFD4] flex items-center gap-4 relative">
-                  <div className="w-16 h-16 rounded-xl bg-white border border-[#EDE2D7] overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
+                  <div className="w-16 h-16 rounded-xl bg-white border border-[#EDE2D7] overflow-hidden flex items-center justify-center shrink-0 shadow-sm relative">
                     {getProductImg(enrichedProducts[0]) ? (
                       <img
                         src={getProductImg(enrichedProducts[0])}
                         alt={enrichedProducts[0].name}
                         className="w-full h-full object-cover"
                       />
+                    ) : (enrichedProducts[0]?.is_3d || enrichedProducts[0]?.cloudinary_link?.includes('.glb')) ? (
+                      <div className="w-full h-full bg-[#FAF6F2] relative">
+                        <Inline3DPreview
+                          modelUrl={enrichedProducts[0].cloudinary_link}
+                          category={enrichedProducts[0].category}
+                          pastelBg="#FAF6F2"
+                        />
+                      </div>
                     ) : (
                       <span className="text-base font-bold text-[#E8633A]">
                         {enrichedProducts[0].brand?.[0] || 'G'}
@@ -433,9 +443,17 @@ export default function ComparePage() {
                       >
                         <div>
                           <div className="flex items-start gap-3 mb-3">
-                            <div className="w-14 h-14 rounded-xl bg-white border border-[#EDE2D7] overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+                            <div className="w-14 h-14 rounded-xl bg-white border border-[#EDE2D7] overflow-hidden flex items-center justify-center shrink-0 shadow-xs relative">
                               {rImg ? (
                                 <img src={rImg} alt={rec.name} className="w-full h-full object-cover" />
+                              ) : (rec.is_3d || rec.cloudinary_link?.includes('.glb')) ? (
+                                <div className="w-full h-full bg-[#FAF6F2] relative">
+                                  <Inline3DPreview
+                                    modelUrl={rec.cloudinary_link}
+                                    category={rec.category}
+                                    pastelBg="#FAF6F2"
+                                  />
+                                </div>
                               ) : (
                                 <span className="text-xs font-bold text-[#E8633A]">{rec.brand?.[0]}</span>
                               )}
