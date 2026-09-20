@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingBag, Star, Box, Plus, Check, Scale } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Box, Check, Scale } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useCompare } from '../context/CompareContext';
-import Inline3DPreview, { CATEGORY_PASTELS, CATEGORY_COLORS } from './Inline3DPreview';
+import Inline3DPreview, { CATEGORY_PASTELS } from './Inline3DPreview';
 
 /**
  * ==============================================================================

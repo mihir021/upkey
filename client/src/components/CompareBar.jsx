@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Scale, X, ArrowRight, Trash2, AlertCircle, Lock, Sparkles, Plus } from 'lucide-react';
+import { Scale, X, ArrowRight, Trash2, AlertCircle, Lock } from 'lucide-react';
 import { useCompare } from '../context/CompareContext';
 
 /**

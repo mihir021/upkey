@@ -440,6 +440,7 @@ export default function ExplorePage() {
     const urlMax = params.get('max_price') ? Number(params.get('max_price')) : 5000;
     const urlSort = params.get('sort') || 'rating';
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCategory(prev => (prev !== urlCategory ? urlCategory : prev));
     setSearch(prev => (prev !== urlSearch ? urlSearch : prev));
     setBudgetTier(prev => (prev !== urlBudget ? urlBudget : prev));

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Scale,
   ArrowLeft,
@@ -12,12 +12,11 @@ import {
   SlidersHorizontal,
   Info,
   CheckCircle2,
-  Box,
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import CompareColumn from '../components/CompareColumn';
 import LoadingScreen from '../components/LoadingScreen';
-import Inline3DPreview, { CATEGORY_PASTELS } from '../components/Inline3DPreview';
+import Inline3DPreview from '../components/Inline3DPreview';
 import { useCompare } from '../context/CompareContext';
 import productsData from '../data/products.json';
 

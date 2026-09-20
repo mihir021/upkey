@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
+
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ShieldCheck, ChevronRight, Droplets, Palette, Target, CircleDollarSign } from 'lucide-react';
 

@@ -148,14 +148,13 @@ export default function UserProfile() {
     api.get('/orders/rewards/balance')
       .then((res) => setCoinBalance(res.data.coinsBalance))
       .catch((err) => console.error('Rewards balance check error:', err));
-  }, []);
+  }, [fetchMe]);
 
   // ── Analytics Computations ──────────────────────────────────────────────────
   const totalSpent = useMemo(() =>
     orders.reduce((sum, o) => sum + (o.total || 0), 0), [orders]);
 
-  const totalItems = useMemo(() =>
-    orders.reduce((sum, o) => sum + o.items.reduce((itemSum, i) => itemSum + i.qty, 0), 0), [orders]);
+
 
   const avgOrder = orders.length ? Math.round(totalSpent / orders.length) : 0;
 

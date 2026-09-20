@@ -112,6 +112,7 @@ export default function Navbar() {
 
   // Close mobile drawer when navigating
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMenuOpen(false);
     setProfileOpen(false);
   }, [location.pathname]);
