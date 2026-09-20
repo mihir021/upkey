@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { activeUsersGauge } = require('../metrics/prometheus');
 
 const SALT_ROUNDS = 10;
 
@@ -31,6 +32,9 @@ async function signup(req, res) {
     const user = await User.create({ name, email, passwordHash });
 
     const token = signToken(user);
+    
+    // Track active user count
+    activeUsersGauge.inc();
 
     res.status(201).json({
       token,
@@ -59,6 +63,9 @@ async function login(req, res) {
     }
 
     const token = signToken(user);
+    
+    // Track active user count
+    activeUsersGauge.inc();
 
     res.status(200).json({
       token,

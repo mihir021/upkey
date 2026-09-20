@@ -62,8 +62,30 @@ services:
       - "${GRAFANA_PORT:-3000}:3000"
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
 
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: mern-node-exporter
+    profiles:
+      - monitoring
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
 
-
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: mern-cadvisor
+    profiles:
+      - monitoring
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro

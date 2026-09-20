@@ -23,6 +23,45 @@ const httpRequestsTotal = new client.Counter({
   registers: [register],
 });
 
+// Custom Business & Product Metrics
+const quizCompletedTotal = new client.Counter({
+  name: 'quiz_completed_total',
+  help: 'Total number of times a user finishes the skin quiz/profile onboarding',
+  registers: [register],
+});
+
+const productMatchedTotal = new client.Counter({
+  name: 'product_matched_total',
+  help: 'Total number of products matched to users, labeled by match score bucket',
+  labelNames: ['match_score_bucket'],
+  registers: [register],
+});
+
+const dupeFinderUsedTotal = new client.Counter({
+  name: 'dupe_finder_used_total',
+  help: 'Total number of times the AI dupe finder intent was triggered',
+  registers: [register],
+});
+
+const productAddedToCartTotal = new client.Counter({
+  name: 'product_added_to_cart_total',
+  help: 'Total number of products added to cart',
+  labelNames: ['product_id', 'category'],
+  registers: [register],
+});
+
+const checkoutCompletedTotal = new client.Counter({
+  name: 'checkout_completed_total',
+  help: 'Total number of completed checkouts',
+  registers: [register],
+});
+
+const activeUsersGauge = new client.Gauge({
+  name: 'active_users_gauge',
+  help: 'Current number of active authenticated users (increments on login, decrements on explicit logout)',
+  registers: [register],
+});
+
 // Express middleware: times every request and records it under the route's
 // *pattern* (e.g. "/api/auth/signup"), not the raw URL. Using the raw URL
 // would create a new, ever-growing metric label for every unique value
@@ -40,4 +79,13 @@ function metricsMiddleware(req, res, next) {
   next();
 }
 
-module.exports = { register, metricsMiddleware };
+module.exports = { 
+  register, 
+  metricsMiddleware,
+  quizCompletedTotal,
+  productMatchedTotal,
+  dupeFinderUsedTotal,
+  productAddedToCartTotal,
+  checkoutCompletedTotal,
+  activeUsersGauge
+};

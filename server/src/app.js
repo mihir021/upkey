@@ -6,6 +6,7 @@ const aiRoutes = require('./routes/ai.routes');
 const productsRoutes = require('./routes/products.routes');
 const orderRoutes = require('./routes/order.routes');
 const profileRoutes = require('./routes/profile.routes');
+const metricsRoutes = require('./routes/metrics.routes');
 const { register, metricsMiddleware } = require('./metrics/prometheus');
 
 // The Express "app" holds all our routes and middleware.
@@ -36,6 +37,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/metrics', metricsRoutes);
 
 // Prometheus scrapes this endpoint on a timer (see monitoring/prometheus.yml)
 // to pull the latest metric values.

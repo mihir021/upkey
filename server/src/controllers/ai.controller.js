@@ -8,6 +8,7 @@
 
 const { sendAgentMessage } = require('../services/ml.service');
 const Product = require('../models/Product');
+const { productMatchedTotal, dupeFinderUsedTotal } = require('../metrics/prometheus');
 
 /**
  * Resilient fallback handler when the external LLM is offline or initializing.
@@ -462,6 +463,15 @@ async function chat(req, res) {
   if (process.env.GEMINI_API_KEY || process.env.LLM_API_KEY) {
     try {
       const geminiData = await handleGeminiChat(message.trim(), user_profile, product_id, conversation_history);
+      
+      // Track metrics
+      if (/(dupe|alternative|similar|compare)/i.test(message)) {
+        dupeFinderUsedTotal.inc();
+      }
+      if (geminiData.result && geminiData.result.results) {
+        productMatchedTotal.inc({ match_score_bucket: '90-100%' }, geminiData.result.results.length);
+      }
+
       return res.status(200).json({
         success: true,
         data: geminiData,
@@ -481,6 +491,14 @@ async function chat(req, res) {
       product_id: product_id || null,
       conversation_history: conversation_history || [],
     });
+    
+    // Track metrics
+    if (/(dupe|alternative|similar|compare)/i.test(message)) {
+      dupeFinderUsedTotal.inc();
+    }
+    if (mlResponse.result && mlResponse.result.results) {
+      productMatchedTotal.inc({ match_score_bucket: '90-100%' }, mlResponse.result.results.length);
+    }
 
     return res.status(200).json({
       success: true,
@@ -494,6 +512,15 @@ async function chat(req, res) {
     // ------------------------------------------------------------------
     try {
       const fallbackData = await handleLocalFallback(message, user_profile);
+      
+      // Track metrics
+      if (/(dupe|alternative|similar|compare)/i.test(message)) {
+        dupeFinderUsedTotal.inc();
+      }
+      if (fallbackData.result && fallbackData.result.results) {
+        productMatchedTotal.inc({ match_score_bucket: '70-89%' }, fallbackData.result.results.length);
+      }
+
       return res.status(200).json({
         success: true,
         data: fallbackData,

@@ -1,0 +1,129 @@
+const fs = require('fs');
+const path = require('path');
+
+const dashboard = {
+  "title": "Glow More - Production Overview",
+  "timezone": "browser",
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["hackathon", "demo"],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Infrastructure Health",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU Usage (Containers)",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 1 },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{name=~\"mern.*\"}[1m])) by (name)",
+          "legendFormat": "{{name}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory Usage (Containers)",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 1 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "sum(container_memory_usage_bytes{name=~\"mern.*\"}) by (name)",
+          "legendFormat": "{{name}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "API P95 Latency",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 1 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))",
+          "legendFormat": "P95 Latency"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Business Analytics",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "id": 200
+    },
+    {
+      "type": "stat",
+      "title": "Active Users",
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 10 },
+      "id": 4,
+      "targets": [{ "expr": "sum(active_users_gauge)", "legendFormat": "Users" }]
+    },
+    {
+      "type": "stat",
+      "title": "Quiz Completions",
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 10 },
+      "id": 5,
+      "targets": [{ "expr": "sum(quiz_completed_total)", "legendFormat": "Completed" }]
+    },
+    {
+      "type": "stat",
+      "title": "Dupe Searches",
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 10 },
+      "id": 6,
+      "targets": [{ "expr": "sum(dupe_finder_used_total)", "legendFormat": "Searches" }]
+    },
+    {
+      "type": "stat",
+      "title": "Products Added to Cart",
+      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 10 },
+      "id": 7,
+      "targets": [{ "expr": "sum(product_added_to_cart_total)", "legendFormat": "Added" }]
+    },
+    {
+      "type": "stat",
+      "title": "Checkouts Completed",
+      "gridPos": { "h": 5, "w": 4, "x": 16, "y": 10 },
+      "id": 8,
+      "targets": [{ "expr": "sum(checkout_completed_total)", "legendFormat": "Completed" }]
+    },
+    {
+      "type": "barchart",
+      "title": "Product Matches by Score Bucket",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "id": 9,
+      "targets": [
+        {
+          "expr": "sum(product_matched_total) by (match_score_bucket)",
+          "legendFormat": "{{match_score_bucket}}"
+        }
+      ]
+    },
+    {
+      "type": "barchart",
+      "title": "Cart Additions by Category",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "id": 10,
+      "targets": [
+        {
+          "expr": "sum(product_added_to_cart_total) by (category)",
+          "legendFormat": "{{category}}"
+        }
+      ]
+    }
+  ]
+};
+
+const dir = path.join(__dirname, 'monitoring', 'grafana', 'dashboards');
+fs.mkdirSync(dir, { recursive: true });
+fs.writeFileSync(path.join(dir, 'glow_more.json'), JSON.stringify(dashboard, null, 2));
+console.log('Dashboard JSON generated successfully.');

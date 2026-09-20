@@ -59,6 +59,10 @@ async function updatePreferences(req, res) {
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
+    
+    // Track business metric for onboarding completion
+    const { quizCompletedTotal } = require('../metrics/prometheus');
+    quizCompletedTotal.inc();
 
     res.status(200).json({
       message: 'Preferences saved successfully.',

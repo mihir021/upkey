@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const RewardTransaction = require('../models/RewardTransaction');
+const { checkoutCompletedTotal } = require('../metrics/prometheus');
 
 // Configurables
 const COINS_EARNED_PER_100_INR = 10;
@@ -132,6 +133,9 @@ exports.checkout = async (req, res) => {
 
     await session.commitTransaction();
     session.endSession();
+    
+    // Track business metric for completed checkout
+    checkoutCompletedTotal.inc();
 
     return res.status(201).json({
       message: 'Order placed successfully.',

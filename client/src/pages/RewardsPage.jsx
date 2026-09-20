@@ -13,7 +13,7 @@ export default function RewardsPage() {
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    if (!requireAuth('view your rewards', () => navigate('/'))) return;
+    if (!requireAuth('view your rewards')) return;
 
     Promise.all([
       api.get('/orders/rewards/balance'),

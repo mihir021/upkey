@@ -23,7 +23,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!requireAuth('view your orders', () => navigate('/'))) return;
+    if (!requireAuth('view your orders')) return;
 
     api.get('/orders')
       .then(res => setOrders(res.data))

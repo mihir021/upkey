@@ -163,7 +163,7 @@ export default function ProductCard({ product, size = 'md' }) {
           <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-[#231E1B]/80 backdrop-blur-md text-white text-[10px] font-bold tracking-wide border border-white/20 shadow-xs flex items-center gap-1.5 z-10 pointer-events-none">
             <Box className="w-3 h-3 text-[#E8633A]" /> 3D
           </span>
-        ) : product.budget_tier === 'Premium' ? (
+        ) : product.budget_tier === 'Premium' && product.price_inr >= 1500 ? (
           <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-[#231E1B]/75 backdrop-blur-md text-[#FFF7F0] text-[9.5px] font-bold tracking-wider uppercase border border-white/20 shadow-xs z-10 pointer-events-none">
             ★ Premium
           </span>

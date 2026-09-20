@@ -336,6 +336,7 @@ export default function Navbar() {
                       onClick={() => {
                         clearUserData();
                         logout();
+                        api.post('/metrics/track', { event: 'logout' }).catch(() => {});
                         navigate('/');
                         setProfileOpen(false);
                       }}

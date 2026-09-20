@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Product = require('../models/Product');
+const { productMatchedTotal } = require('../metrics/prometheus');
 
 // req.userId was set by the requireAuth middleware after verifying the JWT.
 async function getDashboard(req, res) {
@@ -88,6 +89,17 @@ async function getDashboard(req, res) {
       title: 'Trending Now',
       subtitle: 'Top rated products on Joyory',
       products: trending,
+    });
+    
+    // Track business metric for personalized product matches
+    sections.forEach(section => {
+      let bucket = '50-69%';
+      if (section.id === 'recommended') bucket = '90-100%';
+      else if (section.id.startsWith('category') || section.id === 'ingredients') bucket = '70-89%';
+      
+      if (section.id !== 'trending') {
+        productMatchedTotal.inc({ match_score_bucket: bucket }, section.products.length);
+      }
     });
 
     res.status(200).json({

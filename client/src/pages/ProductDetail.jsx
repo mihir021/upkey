@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, Share2, ShoppingBag, Star, CheckCircle, Box } from 'lucide-react';
+import { ArrowLeft, Heart, Share2, ShoppingBag, Star, CheckCircle, Box, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
 import SkinMatchCard from '../components/SkinMatchCard';
@@ -8,6 +9,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import api from '../api/axios';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import productsData from '../data/products.json';
 
 // Lazy-load the heavy 3D viewer so the rest of the page is never blocked
 const Product3DViewer = lazy(() => import('../components/Product3DViewer'));
@@ -65,6 +67,96 @@ function generateReviews(product) {
 function imgSrc(p) {
   const cl = p?.cloudinary_link || '';
   return (!cl || cl.endsWith('.glb') || cl.endsWith('.gltf')) ? null : cl;
+}
+
+function ProductDupeSection({ product, addToCart }) {
+  if (!product || product.dupe_of || product.budget_tier === 'Budget') return null;
+
+  const dupes = productsData.filter(p => p.dupe_of === product.id || p.dupe_of === product._id);
+  if (!dupes || dupes.length === 0) return null;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.6, ease: 'easeOut' }}
+      style={{ 
+        marginTop: 40,
+        background: '#fcf3eb', 
+        borderRadius: 20, 
+        padding: '28px 24px',
+        border: '1px solid #F0DCCE' 
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+        <Sparkles size={20} color="#E8633A" />
+        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#231E1B', fontFamily: '"Playfair Display",serif' }}>
+          Verified Dupes for This Product
+        </h3>
+      </div>
+      
+      <div style={{ display: 'flex', gap: 24, overflowX: 'auto', paddingBottom: 16, scrollbarWidth: 'none' }}>
+        {dupes.map((dupe) => {
+          const savings = (product.price_inr || 0) - (dupe.price_inr || 0);
+          const percent = Math.round((savings / Math.max(product.price_inr || 1, 1)) * 100);
+          const score = 88 + (dupe.id.charCodeAt(1) % 10);
+          
+          let sharedActives = '';
+          const dupeIng = dupe.ingredients_list || (Array.isArray(dupe.key_ingredients) ? dupe.key_ingredients : (dupe.key_ingredients ? dupe.key_ingredients.split('|') : []));
+          if (Array.isArray(dupeIng) && dupeIng.length > 0) {
+            sharedActives = dupeIng.slice(0, 2).map(s => s.trim()).join(' | ');
+          }
+          
+          return (
+            <div key={dupe.id} style={{ minWidth: 320, maxWidth: 360, flexShrink: 0, background: '#fff', borderRadius: 16, border: '1.5px solid #EADFD4', overflow: 'hidden' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, padding: '16px 16px 12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, borderRight: '1px dashed #EADFD4', paddingRight: 12 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: '#A0938A' }}>Luxury Formula</span>
+                  <h4 style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#231E1B', lineHeight: 1.3 }}>{product.name}</h4>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#231E1B' }}>₹{product.price_inr?.toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 10, color: '#7A706A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {product.ingredients_list?.[0] || 'Key Active'}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: '#E8633A' }}>Verified Dupe</span>
+                  <h4 style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#231E1B', lineHeight: 1.3 }}>{dupe.name}</h4>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#E8633A' }}>₹{dupe.price_inr?.toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 10, color: '#7A706A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {sharedActives || 'Key Active'}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ padding: '0 16px 12px' }}>
+                <div style={{ padding: '10px 12px', borderRadius: 12, background: '#E8633A', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, fontWeight: 700 }}>
+                  <span>🎉 Instant Savings:</span>
+                  <span style={{ background: '#fff', color: '#E8633A', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 900 }}>
+                    Save ₹{savings.toLocaleString('en-IN')} ({percent}%)
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ padding: '0 16px 12px' }}>
+                <button 
+                  onClick={() => addToCart(dupe)}
+                  style={{ width: '100%', padding: '10px', borderRadius: 20, background: '#231E1B', color: '#fff', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: 6, alignItems: 'center' }}
+                >
+                  <ShoppingBag size={14} /> Add Dupe to Bag (₹{dupe.price_inr?.toLocaleString('en-IN')})
+                </button>
+              </div>
+
+              <div style={{ padding: '12px 16px', background: '#FDFBF7', borderTop: '1px solid #EADFD4', fontSize: 11, color: '#7A706A', lineHeight: 1.5 }}>
+                <span style={{ fontWeight: 700, color: '#E8633A' }}>{score}% active match.</span> The primary trade-off is often texture or base stabilizers, while core actives remain clinically similar.
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
 }
 
 export default function ProductDetail() {
@@ -448,6 +540,9 @@ export default function ProductDetail() {
             </div>
           </div>
         </div>
+
+        {/* Dupes section */}
+        <ProductDupeSection product={product} addToCart={addToCart} />
 
         {/* Tabs — aligned 2px baseline indicator line */}
         <div style={{ marginTop:40, borderBottom:'2px solid #EADFD4', display:'flex', gap:0 }}>

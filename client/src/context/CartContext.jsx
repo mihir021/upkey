@@ -1,4 +1,5 @@
 import { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import api from '../api/axios';
 
 const CartContext = createContext(null);
 
@@ -164,7 +165,13 @@ export function CartProvider({ children }) {
     localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.history));
   }, [state.history]);
 
-  const addToCart      = useCallback((product) => dispatch({ type: 'ADD_TO_CART', product }), []);
+  const addToCart = useCallback((product) => {
+    dispatch({ type: 'ADD_TO_CART', product });
+    api.post('/metrics/track', { 
+      event: 'cart_add', 
+      payload: { product_id: product.id, category: product.category } 
+    }).catch(() => {});
+  }, []);
   const removeFromCart = useCallback((id) => dispatch({ type: 'REMOVE_FROM_CART', id }), []);
   const updateQty      = useCallback((id, delta) => dispatch({ type: 'UPDATE_QTY', id, delta }), []);
   const clearCart      = useCallback(() => dispatch({ type: 'CLEAR_CART' }), []);
