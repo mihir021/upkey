@@ -102,32 +102,6 @@ export default function LandingPage() {
     };
   }, []);
 
-  // Add a very small parallax response to the studio light on pointer devices.
-  // It updates CSS variables directly so it does not trigger React re-renders.
-  useEffect(() => {
-    if (!window.matchMedia || !window.matchMedia('(pointer: fine)').matches) return undefined;
-
-    let frameId;
-    const handlePointerMove = (event) => {
-      const offsetX = (event.clientX / window.innerWidth - 0.5) * 64;
-      const offsetY = (event.clientY / window.innerHeight - 0.5) * 42;
-
-      window.cancelAnimationFrame(frameId);
-      frameId = window.requestAnimationFrame(() => {
-        document.documentElement.style.setProperty('--ambient-shift-x', `${offsetX}px`);
-        document.documentElement.style.setProperty('--ambient-shift-y', `${offsetY}px`);
-      });
-    };
-
-    window.addEventListener('pointermove', handlePointerMove, { passive: true });
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      window.removeEventListener('pointermove', handlePointerMove);
-      document.documentElement.style.removeProperty('--ambient-shift-x');
-      document.documentElement.style.removeProperty('--ambient-shift-y');
-    };
-  }, []);
-
   // Filtered products list
   const filteredProducts = useMemo(() => {
     return productsData.filter((p) => {
@@ -195,8 +169,8 @@ export default function LandingPage() {
 
   return (
     <div className="relative min-h-screen bg-[#F6EFE9] text-[#231E1B] font-sans selection:bg-[#E8633A] selection:text-white">
-      {/* Live Interactive Skincare Canvas Background (Fluid Aura, Bio-Lipid Waves & Cursor Lighting) */}
-      <LiveSkincareBackground scrollProgress={scrollProgress} />
+      {/* Live Animated Aurora Background (CSS GPU-Accelerated — Stable on Scroll) */}
+      <LiveSkincareBackground />
       
       {/* ====================================================================
           STICKY 3D BACKGROUND CANVAS (Moves along S-curve on scroll)
