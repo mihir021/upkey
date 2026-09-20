@@ -45,8 +45,8 @@ export default function ShopPage() {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      api.get('/api/products?sort=rating&limit=8'),
-      api.get('/api/products?sort=rating&limit=20&budget_tier=Premium'),
+      api.get('/products?sort=rating&limit=8'),
+      api.get('/products?sort=rating&limit=20&budget_tier=Premium'),
     ]).then(([featRes, topRes]) => {
       setFeatured(featRes.data.products || []);
       setTopRated(topRes.data.products || []);
@@ -57,7 +57,7 @@ export default function ShopPage() {
   // Fetch by selected category
   useEffect(() => {
     const catParam = activeCategory === 'All' ? '' : activeCategory;
-    api.get(`/api/products?sort=rating&limit=8${catParam ? `&category=${encodeURIComponent(catParam)}` : ''}`)
+    api.get(`/products?sort=rating&limit=8${catParam ? `&category=${encodeURIComponent(catParam)}` : ''}`)
       .then(r => setCatProds(r.data.products || []))
       .catch(console.error);
   }, [activeCategory]);

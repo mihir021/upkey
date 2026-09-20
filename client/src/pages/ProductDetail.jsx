@@ -77,8 +77,8 @@ export default function ProductDetail() {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      api.get(`/api/products/${id}`),
-      api.get(`/api/products/${id}/recommendations`),
+      api.get(`/products/${id}`),
+      api.get(`/products/${id}/recommendations`),
     ]).then(([pRes, rRes]) => {
       setProduct(pRes.data);
       setRecs(rRes.data || []);

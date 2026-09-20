@@ -75,7 +75,7 @@ export default function ExplorePage() {
         min_price: minPrice, max_price: maxPrice,
         sort, limit, page: pg,
       });
-      const { data } = await api.get(`/api/products?${q}`);
+      const { data } = await api.get(`/products?${q}`);
       setProducts(prev => reset ? (data.products || []) : [...prev, ...(data.products || [])]);
       setTotal(data.total || 0);
     } catch (e) { console.error(e); }

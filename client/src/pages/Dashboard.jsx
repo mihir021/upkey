@@ -29,7 +29,7 @@ export default function Dashboard() {
     if (!history.length) return;
     setLoadingRecent(true);
     Promise.all(
-      history.slice(0, 6).map(id => api.get(`/api/products/${id}`).catch(() => null))
+      history.slice(0, 6).map(id => api.get(`/products/${id}`).catch(() => null))
     ).then(results => {
       setRecentProds(results.filter(Boolean).map(r => r.data));
     }).finally(() => setLoadingRecent(false));
@@ -37,7 +37,7 @@ export default function Dashboard() {
 
   // Fetch trending
   useEffect(() => {
-    api.get('/api/products?sort=rating&limit=6')
+    api.get('/products?sort=rating&limit=6')
       .then(r => setTrending(r.data.products || []))
       .catch(console.error);
   }, []);
