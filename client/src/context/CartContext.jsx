@@ -74,16 +74,10 @@ function loadCleanHistory() {
 
 // Initial state containing strictly real user data
 const initialState = {
-<<<<<<< HEAD
   cart:     loadJSON(STORAGE_KEY_CART, {}),
   wishlist: loadCleanWishlist(),
   orders:   loadCleanOrders(),
   history:  loadCleanHistory(),
-=======
-  cart:    loadJSON(STORAGE_KEY_CART, {}),
-  wishlist: storedWish && Object.keys(storedWish).length ? storedWish : DEFAULT_DEMO_WISH,
-  history: Array.isArray(storedHist) && storedHist.length ? storedHist : DEFAULT_DEMO_HISTORY,
->>>>>>> 21d4540 (Implement Joyory loyalty reward coin system)
 };
 
 function cartReducer(state, action) {
