@@ -24,7 +24,6 @@ function loadJSON(key, fallback) {
   }
 }
 
-<<<<<<< HEAD
 // Sanitize legacy demo orders, wishlist, and history from localStorage
 function sanitizeStorage() {
   try {
@@ -33,9 +32,6 @@ function sanitizeStorage() {
       const cleaned = orders.filter(o => o && !DEMO_ORDER_IDS.has(o.id));
       localStorage.setItem(STORAGE_KEY_ORDERS, JSON.stringify(cleaned));
     }
-=======
-// Removed DEFAULT_DEMO_ORDERS
->>>>>>> 21d4540 (Implement Joyory loyalty reward coin system)
 
     const wish = loadJSON(STORAGE_KEY_WISH, {});
     if (wish && Object.keys(wish).length === 1 && wish.P015?.id === 'P015') {
