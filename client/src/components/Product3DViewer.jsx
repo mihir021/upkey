@@ -142,18 +142,6 @@ export default function Product3DViewer({ modelUrl, category, style }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* 3D Indicator Badge */}
-      <div style={{
-        position: 'absolute', top: 14, left: 14,
-        background: 'rgba(35,30,27,0.7)', backdropFilter: 'blur(8px)',
-        color: '#fff', fontSize: 11, fontWeight: 700, padding: '5px 12px',
-        borderRadius: 20, zIndex: 10, letterSpacing: 0.4,
-        display: 'flex', alignItems: 'center', gap: 6,
-        pointerEvents: 'none',
-      }}>
-        <span style={{ fontSize: 13 }}>🧊</span> 3D Interactive Model
-      </div>
-
       {/* Interactive Controls Hint */}
       <div style={{
         position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
