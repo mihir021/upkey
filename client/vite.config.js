@@ -12,11 +12,11 @@ export default defineConfig({
     tailwindcss(),
     react()
   ],
-  // In local dev, Vite proxies /api requests to the Express backend (:5000)
+  // In local dev, Vite proxies /api requests to the Express backend (:5001)
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: process.env.VITE_PROXY_TARGET || 'http://localhost:5001',
         changeOrigin: true,
       },
     },

@@ -16,7 +16,7 @@ export default function Navbar() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { cartCount, wishCount } = useCart();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
 
   const [menuOpen, setMenuOpen]     = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -139,8 +139,8 @@ export default function Navbar() {
             )}
           </button>
 
-          {/* Profile */}
-          {user ? (
+          {/* Profile Dropdown or Sign In CTA */}
+          {(isAuthenticated && user) ? (
             <div ref={profileRef} style={{ position:'relative' }}>
               <button
                 onClick={() => setProfileOpen(p => !p)}
@@ -150,6 +150,7 @@ export default function Navbar() {
                   background:'#F6EFE9', border:'1.5px solid #EADFD4',
                   cursor:'pointer',
                 }}
+                aria-label="Open user menu"
               >
                 <div style={{
                   width:28, height:28, borderRadius:'50%',
@@ -171,16 +172,24 @@ export default function Navbar() {
                   background:'#fff', border:'1.5px solid #EADFD4',
                   borderRadius:16, overflow:'hidden',
                   boxShadow:'0 12px 40px rgba(35,30,27,.14)',
-                  minWidth:180, zIndex:300,
+                  minWidth:190, zIndex:300,
                 }}>
+                  <div style={{ padding: '12px 18px', borderBottom: '1px solid #EADFD4', background: '#FDFBF7' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#231E1B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {user.name}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#665D57', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {user.email}
+                    </div>
+                  </div>
                   {[
-                    { label:'My Profile',  to:'/profile' },
-                    { label:'Dashboard',   to:'/dashboard' },
-                    { label:'My Orders',   to:'/orders' },
+                    { label:'User Profile', to:'/profile' },
+                    { label:'Dashboard',    to:'/dashboard' },
+                    { label:'My Orders',    to:'/orders' },
                   ].map(item => (
                     <button key={item.to} onClick={() => { navigate(item.to); setProfileOpen(false); }}
                       style={{
-                        display:'block', width:'100%', padding:'12px 18px',
+                        display:'block', width:'100%', padding:'11px 18px',
                         background:'transparent', border:'none', cursor:'pointer',
                         textAlign:'left', fontSize:13.5, fontWeight:600, color:'#231E1B',
                         transition:'background .15s',

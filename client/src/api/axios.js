@@ -26,5 +26,24 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Intercept 401 responses to automatically clear expired/invalid credentials
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      error.config &&
+      !error.config.url?.includes('/auth/login') &&
+      !error.config.url?.includes('/auth/signup')
+    ) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.dispatchEvent(new Event('auth:unauthorized'));
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;
 

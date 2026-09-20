@@ -10,7 +10,9 @@ import {
   ShieldCheck,
   Trash2,
   LogOut,
-  X
+  X,
+  ChevronDown,
+  User
 } from 'lucide-react';
 import HeroBottle3D from '../components/HeroBottle3D';
 import LiveSkincareBackground from '../components/LiveSkincareBackground';
@@ -37,6 +39,19 @@ export default function LandingPage() {
   const requireAuth = auth?.requireAuth || ((reason, cb) => { if (cb) cb(); return true; });
   const logout = auth?.logout || (() => {});
   const [showGuestPill, setShowGuestPill] = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Chapter-aware scroll progress (0.0 to 1.0) drives the 3D bottle S-curve.
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -223,11 +238,13 @@ export default function LandingPage() {
               )}
             </a>
 
-            {isAuthenticated ? (
-              <div className="flex items-center space-x-2">
-                <Link
-                  to="/dashboard"
-                  className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-white border border-[#EADFD4] text-xs font-bold text-[#231E1B] hover:border-[#E8633A]/60 transition-all shadow-xs"
+            {(isAuthenticated && user) ? (
+              <div ref={profileRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setProfileOpen((prev) => !prev)}
+                  className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-white border border-[#EADFD4] text-xs font-bold text-[#231E1B] hover:border-[#E8633A]/60 transition-all shadow-xs cursor-pointer"
+                  aria-label="Open user menu"
                 >
                   <div className="w-5 h-5 rounded-full bg-[#E8633A] text-white text-[10px] flex items-center justify-center font-bold">
                     {user?.name ? user.name[0].toUpperCase() : 'U'}
@@ -235,14 +252,51 @@ export default function LandingPage() {
                   <span className="hidden sm:inline truncate max-w-[90px]">
                     Hi, {user?.name ? user.name.split(' ')[0] : 'Member'}
                   </span>
-                </Link>
-                <button
-                  onClick={logout}
-                  title="Sign Out"
-                  className="w-9 h-9 rounded-full bg-white/80 hover:bg-red-50 text-[#665D57] hover:text-red-600 border border-[#EADFD4] hover:border-red-200 flex items-center justify-center transition-all cursor-pointer"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <ChevronDown className="w-3.5 h-3.5 text-[#665D57]" />
                 </button>
+
+                {profileOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-[#EADFD4] rounded-2xl shadow-xl py-2 z-50 overflow-hidden">
+                    <div className="px-4 py-2 border-b border-[#EADFD4]/60 bg-[#FDFBF7]">
+                      <p className="text-xs font-bold text-[#231E1B] truncate">{user?.name}</p>
+                      <p className="text-[11px] text-[#665D57] truncate">{user?.email}</p>
+                    </div>
+                    <Link
+                      to="/profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#231E1B] hover:bg-[#F6EFE9] transition-colors"
+                    >
+                      <User className="w-3.5 h-3.5 text-[#665D57]" />
+                      <span>User Profile</span>
+                    </Link>
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#231E1B] hover:bg-[#F6EFE9] transition-colors"
+                    >
+                      <span>Dashboard</span>
+                    </Link>
+                    <Link
+                      to="/orders"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#231E1B] hover:bg-[#F6EFE9] transition-colors"
+                    >
+                      <span>My Orders</span>
+                    </Link>
+                    <div className="my-1 border-t border-[#EADFD4]" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileOpen(false);
+                        logout();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#c94f2a] hover:bg-red-50 transition-colors text-left cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center space-x-2">
