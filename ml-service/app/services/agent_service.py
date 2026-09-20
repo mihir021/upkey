@@ -16,6 +16,7 @@ Design:
 
 import re
 from typing import Dict, Any, Optional, List
+from difflib import SequenceMatcher
 
 from app.services import shopping_tools
 
@@ -43,6 +44,23 @@ BUDGET_PATTERN = re.compile(
     re.IGNORECASE
 )
 
+
+# ---------------------------------------------------------------------------
+# Greeting / conversational patterns (no tool needed)
+# ---------------------------------------------------------------------------
+GREETING_PATTERNS = [
+    r'^\s*(?:hi|hello|hey|hii+|yo|sup|hola|howdy|greetings)\s*[!.?]*\s*$',
+    r'^\s*(?:how\s*are\s*(?:you|u)|how\s*r\s*u|what\'?s?\s*up|whats\s*up)\s*[!.?]*\s*$',
+    r'^\s*(?:bruh|lol|lmao|ok|okay|thanks|thank\s*you|thx|ty|cool|nice|great|awesome)\s*[!.?]*\s*$',
+    r'^\s*(?:good\s*(?:morning|afternoon|evening|night))\s*[!.?]*\s*$',
+    r'^\s*(?:help|help\s*me)\s*[!.?]*\s*$',
+]
+
+GREETING_RESPONSES = [
+    "Hey there! \U0001f44b I'm your Joyory beauty advisor. I can help you find skincare products, build routines, compare items, or discover budget-friendly dupes. What are you looking for?",
+    "Hi! \U00002728 I'm here to help with all things skincare. Try asking me to recommend products for your skin type, compare two items, or build a routine!",
+    "Hello! \U0001f31f Ready to find your perfect skincare match? Tell me about your skin type and concerns, and I'll recommend products from our catalog.",
+]
 
 # ---------------------------------------------------------------------------
 # Intent detection
@@ -135,6 +153,11 @@ def _detect_intent(message: str) -> tuple:
     stripped = message.strip()
     if PRODUCT_ID_PATTERN.fullmatch(stripped):
         return ("PRODUCT_DETAILS", "get_product")
+
+    # Check greeting/conversational patterns first
+    for pattern in GREETING_PATTERNS:
+        if re.search(pattern, message, re.IGNORECASE):
+            return ("GREETING", None)
 
     for intent_name, tool_name, patterns in INTENT_RULES:
         for pattern in patterns:
@@ -253,6 +276,47 @@ def _extract_params(message: str, user_profile: Optional[Dict] = None,
 
 
 # ---------------------------------------------------------------------------
+# Fuzzy search fallback — handles typos by matching against catalog fields
+# ---------------------------------------------------------------------------
+
+def _fuzzy_search_fallback(query: str, limit: int = 5) -> Dict[str, Any]:
+    """When exact search fails, try fuzzy matching against product fields."""
+    from app.services.product_service import product_service
+
+    query_lower = query.lower().strip()
+    if not query_lower:
+        return {"query": query, "total_results": 0, "products": []}
+
+    all_products = product_service.get_all_products()
+    scored = []
+
+    for product in all_products:
+        best_ratio = 0.0
+        # Check fuzzy match against searchable fields
+        for field in ["name", "brand", "category", "concerns", "key_ingredients"]:
+            val = str(product.get(field, "")).lower()
+            # Check each word in the field against each query word
+            for q_word in query_lower.split():
+                if len(q_word) < 3:
+                    continue
+                for f_word in val.replace(",", " ").split():
+                    ratio = SequenceMatcher(None, q_word, f_word.strip()).ratio()
+                    best_ratio = max(best_ratio, ratio)
+
+        if best_ratio >= 0.65:  # 65% similarity threshold
+            scored.append((best_ratio, product))
+
+    scored.sort(key=lambda x: -x[0])
+    results = [p for _, p in scored[:limit]]
+
+    return {
+        "query": query,
+        "total_results": len(results),
+        "products": results,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Tool execution
 # ---------------------------------------------------------------------------
 
@@ -261,7 +325,11 @@ def _execute_tool(intent: str, tool_name: str, params: Dict[str, Any]) -> Dict[s
 
     if tool_name == "search_products":
         query = params["search_query"] or "skincare"
-        return shopping_tools.search_products(query, limit=5)
+        result = shopping_tools.search_products(query, limit=5)
+        # If exact search found nothing, try fuzzy matching for typos
+        if result.get("total_results", 0) == 0:
+            result = _fuzzy_search_fallback(query, limit=5)
+        return result
 
     if tool_name == "get_product":
         pid = params["product_ids"][0] if params["product_ids"] else None
@@ -302,9 +370,18 @@ def _execute_tool(intent: str, tool_name: str, params: Dict[str, Any]) -> Dict[s
             budget=params["budget"],
         )
 
+    # GREETING — no tool needed
+    if intent == "GREETING":
+        import random
+        return {"greeting": True, "message": random.choice(GREETING_RESPONSES)}
+
     # GENERAL_SHOPPING fallback — try search if we have a query
     if params["search_query"]:
-        return shopping_tools.search_products(params["search_query"], limit=5)
+        result = shopping_tools.search_products(params["search_query"], limit=5)
+        # If exact search found nothing, try fuzzy matching against catalog
+        if result.get("total_results", 0) == 0:
+            result = _fuzzy_search_fallback(params["search_query"], limit=5)
+        return result
 
     return {"message": "I'm here to help you shop! Try asking me to recommend products, search for something, compare items, or build a routine."}
 
@@ -316,6 +393,10 @@ def _execute_tool(intent: str, tool_name: str, params: Dict[str, Any]) -> Dict[s
 def _generate_message(intent: str, tool_name: str, result: Dict[str, Any]) -> str:
     """Generate a simple human-readable summary of the tool result."""
 
+    # Greeting — return the pre-built message
+    if intent == "GREETING":
+        return result.get("message", "Hi! How can I help you with skincare today?")
+
     if "error" in result:
         return result["error"]
 
@@ -323,7 +404,7 @@ def _generate_message(intent: str, tool_name: str, result: Dict[str, Any]) -> st
         total = result.get("total_results", 0)
         query = result.get("query", "")
         if total == 0:
-            return f"No products found for '{query}'."
+            return f"No products found for '{query}'. Try a different spelling or keyword!"
         return f"Found {total} product(s) matching '{query}'. Here are the top results."
 
     if tool_name == "get_product":
@@ -483,8 +564,9 @@ def process_message_with_llm(
         conversation_history=conversation_history,
     )
 
-    # If the LLM errored, fall back to deterministic
-    if llm_result.get("error") == "llm_unavailable":
+    # If the LLM errored (unavailable, rate-limited, 503, etc.),
+    # fall back to deterministic tools so the user always gets real results
+    if llm_result.get("error"):
         deterministic = process_message(message, user_profile, product_id)
         return {
             "message": deterministic["message"],

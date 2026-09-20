@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # Configuration (read once at import time; safe to re-read on hot-reload)
 # ---------------------------------------------------------------------------
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini")
-LLM_MODEL = os.getenv("LLM_MODEL", "gemini-2.5-flash")
+LLM_MODEL = os.getenv("LLM_MODEL", "gemini-3.8-flash")
 LLM_API_KEY = os.getenv("LLM_API_KEY", "")
 
 # ---------------------------------------------------------------------------

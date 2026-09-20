@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import AuthGateModal from './components/AuthGateModal';
+import AiChatWidget  from './components/AiChatWidget';
 import LandingPage    from './pages/LandingPage.jsx';
 import Signup         from './pages/Signup.jsx';
 import Login          from './pages/Login.jsx';
@@ -46,6 +47,7 @@ function App() {
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          <AiChatWidget />
         </CartProvider>
       </AuthProvider>
     </BrowserRouter>
