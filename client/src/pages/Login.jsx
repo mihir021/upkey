@@ -55,8 +55,9 @@ function Login() {
 
     setLoading(true);
     try {
-      await login(form);
-      navigate('/shop');
+      const result = await login(form);
+      const dest = result?.user?.onboardingCompleted ? '/dashboard' : '/onboarding';
+      navigate(dest);
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {

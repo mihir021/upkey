@@ -117,4 +117,33 @@ async function getRecommendations(req, res) {
   }
 }
 
-module.exports = { getAllProducts, getProductById, getCategories, getRecommendations };
+/**
+ * GET /api/products/catalog-values
+ * Returns distinct catalog values for onboarding / preference forms.
+ */
+async function getCatalogValues(req, res) {
+  try {
+    const [categories, concerns, ingredients, skinTypes, skinTones, budgetTiers] = await Promise.all([
+      Product.distinct('category'),
+      Product.distinct('concerns'),
+      Product.distinct('key_ingredients'),
+      Product.distinct('skin_types'),
+      Product.distinct('skin_tones'),
+      Product.distinct('budget_tier'),
+    ]);
+
+    res.json({
+      categories: categories.filter(Boolean).sort(),
+      concerns: concerns.filter(Boolean).sort(),
+      ingredients: ingredients.filter(Boolean).sort(),
+      skinTypes: skinTypes.filter(Boolean).sort(),
+      skinTones: skinTones.filter(Boolean).sort(),
+      budgetTiers: budgetTiers.filter(Boolean).sort(),
+    });
+  } catch (err) {
+    console.error('getCatalogValues error:', err);
+    res.status(500).json({ message: 'Server error fetching catalog values' });
+  }
+}
+
+module.exports = { getAllProducts, getProductById, getCategories, getRecommendations, getCatalogValues };

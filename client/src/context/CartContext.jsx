@@ -50,8 +50,6 @@ function sanitizeStorage() {
 sanitizeStorage();
 
 // Note: these are left over if they were needed, otherwise not used.
-const storedWish   = loadJSON(STORAGE_KEY_WISH,   null);
-const storedHist   = loadJSON(STORAGE_KEY_HISTORY, null);
 
 function loadCleanOrders() {
   const orders = loadJSON(STORAGE_KEY_ORDERS, []);
