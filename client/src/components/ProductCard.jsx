@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect, Suspense } from 'react';
+import React, { useState, useRef, useEffect, Suspense, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingBag, Star, Box, Plus, Check } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Box, Plus, Check, Scale } from 'lucide-react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, OrbitControls, Environment, ContactShadows, Float } from '@react-three/drei';
+import { useGLTF, OrbitControls, Environment, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { useCart } from '../context/CartContext';
+import { useCompare } from '../context/CompareContext';
 
 /**
  * ==============================================================================
@@ -69,13 +70,13 @@ const VARIANT_SWATCHES = {
   default:     ['#EADFD4', '#E8633A'],
 };
 
-// ── Inline 3D Model Mesh (normalised & centred) ───────────────────────
+// ── Inline 3D Model Mesh (normalised & grounded) ───────────────────────
 function MiniProductMesh({ url }) {
   const { scene } = useGLTF(url);
   const ref = useRef();
 
-  // Clone, normalise scale + centre the model so it fits the canvas
-  const model = React.useMemo(() => {
+  // Clone, normalise scale + ground the model so its base sits directly on the shadow plane
+  const model = useMemo(() => {
     const inst = scene.clone(true);
     inst.traverse(n => {
       if (n.isMesh) {
@@ -84,21 +85,30 @@ function MiniProductMesh({ url }) {
       }
     });
     inst.updateMatrixWorld(true);
-    const box  = new THREE.Box3().setFromObject(inst);
+    const box = new THREE.Box3().setFromObject(inst);
     const size = box.getSize(new THREE.Vector3());
-    const max  = Math.max(size.x, size.y, size.z, 0.001);
-    // Scale to fit a ~2.4 unit bounding sphere (compact for cards)
-    inst.scale.setScalar(2.4 / max);
+    const max = Math.max(size.x, size.y, size.z, 0.001);
+
+    // Scale so the largest dimension fits comfortably (~1.85 units)
+    // Leaves generous headroom so tall bottles are never clipped at the top
+    inst.scale.setScalar(1.85 / max);
     inst.updateMatrixWorld(true);
-    const box2   = new THREE.Box3().setFromObject(inst);
+
+    const box2 = new THREE.Box3().setFromObject(inst);
     const centre = box2.getCenter(new THREE.Vector3());
+
+    // Center horizontally (X) and in depth (Z)
     inst.position.x -= centre.x;
     inst.position.z -= centre.z;
-    inst.position.y -= box2.min.y;
+
+    // Ground the base of the model firmly at y = -0.75
+    // ContactShadows will be placed at exactly y = -0.75 so there is zero gap
+    inst.position.y -= box2.min.y; // base at y = 0
+    inst.position.y -= 0.75;       // base at y = -0.75
     return inst;
   }, [scene]);
 
-  // Gentle auto-rotation
+  // Gentle auto-rotation around Y axis only — no bobbing to prevent floating
   useFrame(() => {
     if (ref.current) ref.current.rotation.y += 0.005;
   });
@@ -109,9 +119,6 @@ function MiniProductMesh({ url }) {
     </group>
   );
 }
-
-// Need React for useMemo in MiniProductMesh
-import React from 'react';
 
 // ── Error boundary for corrupted / unreachable GLB models ─────────────
 class ModelErrorBoundary extends React.Component {
@@ -142,11 +149,7 @@ function Inline3DPreview({ modelUrl, category, pastelBg }) {
       : DEFAULT_MODEL_URL;
 
   // Fallback component rendered when the real model fails
-  const fallbackJSX = (
-    <Float speed={1.2} rotationIntensity={0.15} floatIntensity={0.2}>
-      <MiniProductMesh url={DEFAULT_MODEL_URL} />
-    </Float>
-  );
+  const fallbackJSX = <MiniProductMesh url={DEFAULT_MODEL_URL} />;
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -154,13 +157,13 @@ function Inline3DPreview({ modelUrl, category, pastelBg }) {
       <div
         style={{
           position: 'absolute', inset: 0,
-          background: `radial-gradient(ellipse at 50% 70%, ${accentColor}20 0%, transparent 70%)`,
+          background: `radial-gradient(ellipse at 50% 65%, ${accentColor}18 0%, transparent 65%)`,
           pointerEvents: 'none', zIndex: 1,
         }}
       />
 
       <Canvas
-        camera={{ position: [0, 1, 5], fov: 34 }}
+        camera={{ position: [0, 0.4, 4.0], fov: 32 }}
         dpr={[1, 1.5]}
         gl={{ antialias: true, alpha: true }}
         frameloop="demand"
@@ -173,15 +176,14 @@ function Inline3DPreview({ modelUrl, category, pastelBg }) {
 
         <Suspense fallback={null}>
           <ModelErrorBoundary fallback={fallbackJSX}>
-            <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.15}>
-              <MiniProductMesh url={validUrl} />
-            </Float>
+            <MiniProductMesh url={validUrl} />
           </ModelErrorBoundary>
+          {/* Ground contact shadow placed precisely at the model base (y = -0.75) */}
           <ContactShadows
-            position={[0, -1, 0]}
-            opacity={0.25}
-            scale={6}
-            blur={2}
+            position={[0, -0.75, 0]}
+            opacity={0.35}
+            scale={4.5}
+            blur={1.8}
             far={3}
             color="#231E1B"
           />
@@ -189,12 +191,13 @@ function Inline3DPreview({ modelUrl, category, pastelBg }) {
         </Suspense>
 
         <OrbitControls
+          target={[0, 0.1, 0]}
           enablePan={false}
           enableZoom={false}
           minPolarAngle={Math.PI / 4}
           maxPolarAngle={(3 * Math.PI) / 4}
           autoRotate
-          autoRotateSpeed={2}
+          autoRotateSpeed={1.8}
         />
       </Canvas>
     </div>
@@ -207,6 +210,7 @@ function Inline3DPreview({ modelUrl, category, pastelBg }) {
 export default function ProductCard({ product, size = 'md' }) {
   const navigate = useNavigate();
   const { addToCart, toggleWishlist, inWishlist, inCart } = useCart();
+  const { isInCompare, toggleCompare } = useCompare();
   const [added, setAdded] = useState(false);
 
   // IntersectionObserver — only mount the heavy 3D canvas when card is in view
@@ -232,8 +236,10 @@ export default function ProductCard({ product, size = 'md' }) {
 
   if (!product) return null;
 
-  const wished  = inWishlist(product.id);
-  const carted  = inCart(product.id);
+  const pid     = product.id || product._id;
+  const wished  = inWishlist(pid);
+  const carted  = inCart(pid);
+  const staged  = isInCompare(pid);
   const src     = imgSrc(product);
   const isSmall = size === 'sm';
   const is3D    = Boolean(
@@ -258,9 +264,15 @@ export default function ProductCard({ product, size = 'md' }) {
     toggleWishlist(product);
   }
 
+  // Handle Compare Staging Toggle
+  function handleCompare(e) {
+    e.stopPropagation();
+    toggleCompare(product);
+  }
+
   // Navigate to Product Detail
   function handleCardClick() {
-    navigate(`/product/${product.id}`);
+    navigate(`/product/${pid}`);
   }
 
   return (
@@ -269,17 +281,22 @@ export default function ProductCard({ product, size = 'md' }) {
       onClick={handleCardClick}
       whileHover={{ y: -4 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
-      className={`group relative flex flex-col bg-white border border-[#EDE2D7]/80 ${
+      className={`group relative flex flex-col bg-white border ${
+        staged
+          ? 'border-[#E8633A] ring-2 ring-[#E8633A]/25 shadow-[0_8px_28px_rgba(232,99,58,0.18)]'
+          : 'border-[#EDE2D7]/80 shadow-[0_4px_20px_rgba(35,30,27,0.05)] hover:shadow-[0_12px_32px_rgba(35,30,27,0.12)] hover:border-[#E8633A]/30'
+      } ${
         isSmall ? 'rounded-2xl p-3' : 'rounded-3xl p-3.5'
-      } shadow-[0_4px_20px_rgba(35,30,27,0.05)] hover:shadow-[0_12px_32px_rgba(35,30,27,0.12)] hover:border-[#E8633A]/30 cursor-pointer overflow-hidden transition-colors`}
+      } cursor-pointer overflow-hidden transition-all`}
       style={{ minHeight: isSmall ? '310px' : '370px' }}
     >
       {/* ====================================================================
           1. IMAGE / 3D AREA (Top ~60% of Card)
+          Uncluttered showcase for product photography or interactive 3D model
           ==================================================================== */}
       <div
         className={`relative w-full ${
-          isSmall ? 'h-36' : 'h-48'
+          isSmall ? 'h-36' : 'h-52'
         } rounded-2xl overflow-hidden flex items-center justify-center shrink-0`}
         style={{ backgroundColor: pastelBg }}
       >
@@ -310,98 +327,105 @@ export default function ProductCard({ product, size = 'md' }) {
           </div>
         )}
 
-        {/* 3D badge overlay for 3D products (shown on top of both image and 3D canvas) */}
-        {is3D && (
-          <span className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-[#231E1B]/70 backdrop-blur-md text-white text-[10px] font-bold tracking-wide border border-white/20 shadow-2xs flex items-center gap-1.5 z-10 pointer-events-none">
-            <Box className="w-3 h-3" /> 3D
+        {/* ── Top-Left: Minimal non-intrusive badge for 3D models or Premium tier ── */}
+        {is3D ? (
+          <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-[#231E1B]/80 backdrop-blur-md text-white text-[10px] font-bold tracking-wide border border-white/20 shadow-xs flex items-center gap-1.5 z-10 pointer-events-none">
+            <Box className="w-3 h-3 text-[#E8633A]" /> 3D
           </span>
-        )}
-
-        {/* Top-Left: Subtle Tier Badge (if Premium/Budget & has real photo, not 3D) */}
-        {src && !is3D && product.budget_tier && (
-          <span className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-white/90 backdrop-blur-md text-[#231E1B] text-[10px] font-bold tracking-wide border border-[#EDE2D7]/80 shadow-2xs">
-            {product.budget_tier}
+        ) : product.budget_tier === 'Premium' ? (
+          <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-[#231E1B]/75 backdrop-blur-md text-[#FFF7F0] text-[9.5px] font-bold tracking-wider uppercase border border-white/20 shadow-xs z-10 pointer-events-none">
+            ★ Premium
           </span>
-        )}
+        ) : null}
 
-        {/* Top-Right: Clean White Circular Wishlist Button */}
-        <button
-          onClick={handleWish}
-          aria-label={wished ? 'Remove from wishlist' : 'Add to wishlist'}
-          className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm cursor-pointer z-10 ${
-            wished
-              ? 'bg-[#E8633A] text-white scale-105'
-              : 'bg-white/95 backdrop-blur-md text-[#7A706A] hover:text-[#E8633A] hover:bg-white hover:scale-105'
-          }`}
-        >
-          <Heart
-            className="w-4 h-4"
-            fill={wished ? '#fff' : 'none'}
-            strokeWidth={2}
-          />
-        </button>
-
-        {/* Floating "Shop" Pill Quick-Action Button on Image */}
-        <div className="absolute bottom-2.5 right-2.5 z-10">
+        {/* ── Top-Right: Quick Action Icons (Compare & Favorite) ── */}
+        <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-10">
+          {/* Compare Toggle Button */}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCardClick();
-            }}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 backdrop-blur-md border border-[#EDE2D7]/80 text-[#231E1B] text-[11px] font-bold shadow-sm hover:bg-[#E8633A] hover:text-white hover:border-[#E8633A] transition-all duration-200 cursor-pointer"
+            onClick={handleCompare}
+            aria-label={staged ? 'Remove from comparison' : 'Add to comparison'}
+            title={staged ? 'Remove from comparison' : 'Compare product'}
+            className={`${
+              isSmall ? 'w-7 h-7' : 'w-8 h-8'
+            } rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer shadow-sm ${
+              staged
+                ? 'bg-[#E8633A] text-white scale-105 shadow-md shadow-[#E8633A]/35'
+                : 'bg-white/95 backdrop-blur-md text-[#665D57] hover:text-[#E8633A] hover:bg-white hover:scale-105 border border-[#EDE2D7]/50'
+            }`}
           >
-            <ShoppingBag className="w-3 h-3 text-[#E8633A] group-hover:text-white transition-colors" />
-            <span>Shop</span>
+            <Scale className={`${isSmall ? 'w-3 h-3' : 'w-3.5 h-3.5'} stroke-[2.2]`} />
+          </button>
+
+          {/* Favorite (Wishlist) Toggle Button */}
+          <button
+            onClick={handleWish}
+            aria-label={wished ? 'Remove from favorites' : 'Add to favorites'}
+            title={wished ? 'Remove from favorites' : 'Add to favorites'}
+            className={`${
+              isSmall ? 'w-7 h-7' : 'w-8 h-8'
+            } rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer shadow-sm ${
+              wished
+                ? 'bg-[#E8633A] text-white scale-105 shadow-md shadow-[#E8633A]/35'
+                : 'bg-white/95 backdrop-blur-md text-[#665D57] hover:text-[#E8633A] hover:bg-white hover:scale-105 border border-[#EDE2D7]/50'
+            }`}
+          >
+            <Heart
+              className={isSmall ? 'w-3.5 h-3.5' : 'w-4 h-4'}
+              fill={wished ? '#fff' : 'none'}
+              strokeWidth={2}
+            />
           </button>
         </div>
       </div>
 
       {/* ====================================================================
-          2. CONTENT AREA (Bottom ~40% of Card)
+          2. CONTENT AREA (Bottom Section)
+          Brand, Category, Product Title, and Rating
           ==================================================================== */}
       <div className="flex flex-col flex-1 p-3.5 pt-3 justify-between">
         <div>
           {/* Brand + Category Chip Row */}
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="text-[10px] font-bold tracking-widest uppercase text-[#E8633A]">
+          <div className="flex items-center justify-between gap-2 mb-1.5 h-5">
+            <span className="text-[10.5px] font-bold tracking-widest uppercase text-[#E8633A] truncate max-w-[65%]">
               {product.brand || 'GLOW MORE'}
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-[#FAF6F2] border border-[#EDE2D7]/60 text-[10px] font-semibold text-[#7A706A]">
+            <span className="px-2 py-0.5 rounded-md bg-[#FAF6F2] border border-[#EDE2D7]/60 text-[10px] font-semibold text-[#7A706A] shrink-0">
               {product.category}
             </span>
           </div>
 
-          {/* Product Title */}
+          {/* Product Title — clean 2-line clamp */}
           <h3
-            className="font-brand font-bold text-[#231E1B] text-sm leading-snug line-clamp-2 min-h-[2.5rem] mb-1.5 group-hover:text-[#E8633A] transition-colors"
+            className="font-brand font-bold text-[#231E1B] text-sm sm:text-[15px] leading-snug line-clamp-2 h-10 mb-1.5 group-hover:text-[#E8633A] transition-colors"
             title={product.name}
           >
             {product.name}
           </h3>
 
           {/* Star Rating Row */}
-          <div className="flex items-center gap-1 mb-2">
+          <div className="flex items-center gap-1.5 mb-2 h-4">
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
-                  className="w-3 h-3"
+                  className="w-3.5 h-3.5"
                   fill={star <= Math.round(product.rating || 5) ? '#F59E0B' : '#EADFD4'}
                   color={star <= Math.round(product.rating || 5) ? '#F59E0B' : '#EADFD4'}
                 />
               ))}
             </div>
-            <span className="text-[11px] font-bold text-[#665D57] ml-0.5 leading-none">
+            <span className="text-[11.5px] font-bold text-[#665D57] leading-none">
               {product.rating?.toFixed(1) || '4.8'}
             </span>
           </div>
         </div>
 
         {/* ====================================================================
-            3. PRICE + ADD ROW
+            3. PRICE + TACTILE SHOP ACTION ROW
+            Price & Swatches on Left, Dedicated "Shop" Action Button on Right
             ==================================================================== */}
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#F5EFE9] mt-auto">
-          {/* Price + Variant Swatches */}
+        <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-[#F5EFE9] mt-auto">
+          {/* Price + Formulation Variant Swatches */}
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-[#231E1B] text-base sm:text-lg leading-none">
               ₹{product.price_inr?.toLocaleString('en-IN') || '999'}
@@ -410,37 +434,51 @@ export default function ProductCard({ product, size = 'md' }) {
               {swatches.map((color, idx) => (
                 <span
                   key={idx}
-                  className="w-2 h-2 rounded-full border border-white shadow-2xs"
+                  className="w-2.5 h-2.5 rounded-full border border-white shadow-2xs"
                   style={{ backgroundColor: color }}
                 />
               ))}
             </div>
           </div>
 
-          {/* Circular Tactile Action Button */}
+          {/* Dedicated "Shop" Button with ShoppingBag Icon */}
           <button
             onClick={handleCart}
-            aria-label="Add to cart"
-            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md hover:scale-105 active:scale-95 shrink-0 ${
+            aria-label="Shop now"
+            className={`flex items-center gap-1.5 ${
+              isSmall ? 'px-2.5 py-1 text-[11px]' : 'px-3.5 py-1.5 text-xs'
+            } rounded-full font-bold transition-all duration-200 cursor-pointer shadow-sm shrink-0 ${
               added
-                ? 'bg-[#27AE60] text-white shadow-[#27AE60]/25'
+                ? 'bg-[#27AE60] text-white shadow-[#27AE60]/25 scale-105'
                 : carted
-                ? 'bg-[#FAF6F2] text-[#E8633A] border border-[#E8633A]/40'
-                : 'bg-[#E8633A] text-white hover:bg-[#D4552E] shadow-[#E8633A]/25'
+                ? 'bg-[#FAF6F2] text-[#E8633A] border border-[#E8633A]/40 hover:bg-[#E8633A] hover:text-white'
+                : 'bg-[#E8633A] text-white hover:bg-[#D4552E] shadow-[#E8633A]/25 hover:shadow-md hover:scale-105 active:scale-95'
             }`}
           >
             <AnimatePresence mode="wait">
               {added ? (
-                <motion.div key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={{ duration: 0.15 }}>
-                  <Check className="w-4 h-4 stroke-[2.5]" />
-                </motion.div>
-              ) : carted ? (
-                <motion.div key="carted" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={{ duration: 0.15 }}>
-                  <ShoppingBag className="w-4 h-4 stroke-[2]" />
+                <motion.div
+                  key="check"
+                  className="flex items-center gap-1"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Added</span>
                 </motion.div>
               ) : (
-                <motion.div key="plus" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={{ duration: 0.15 }}>
-                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                <motion.div
+                  key="shop"
+                  className="flex items-center gap-1.5"
+                  initial={{ scale: 0.9 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0.9 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <ShoppingBag className="w-3.5 h-3.5 stroke-[2.2]" />
+                  <span>Shop</span>
                 </motion.div>
               )}
             </AnimatePresence>

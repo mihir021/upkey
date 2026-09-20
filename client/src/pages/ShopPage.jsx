@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Sparkles, TrendingUp, Zap } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Sparkles, TrendingUp, Zap } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
 import LiveSkincareBackground from '../components/LiveSkincareBackground';
@@ -36,6 +36,12 @@ export default function ShopPage() {
   const [loading, setLoading]     = useState(true);
   const [bannerIdx, setBannerIdx] = useState(0);
   const catScrollRef = useRef();
+  const premiumScrollRef = useRef();
+
+  // Scroll helper for Premium Picks carousel
+  const scrollPremium = (dir) => {
+    premiumScrollRef.current?.scrollBy({ left: dir * 280, behavior: 'smooth' });
+  };
 
   // Banner auto-rotate
   useEffect(() => {
@@ -186,16 +192,18 @@ export default function ShopPage() {
           </div>
 
           {loading ? (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:16 }}>
+            /* Responsive Skeleton Loading Grid with Balanced Proportions */
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(250px,1fr))', gap:22 }}>
               {[...Array(8)].map((_,i) => (
                 <div key={i} style={{
-                  height:280, borderRadius:20, background:'linear-gradient(90deg,#f0e8e0 25%,#faf5f0 50%,#f0e8e0 75%)',
+                  height:380, borderRadius:24, background:'linear-gradient(90deg,#f0e8e0 25%,#faf5f0 50%,#f0e8e0 75%)',
                   backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite',
                 }} />
               ))}
             </div>
           ) : (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(190px,1fr))', gap:16 }}>
+            /* Spacious 3-4 Column Product Grid with Proper Card Dimensions */
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(250px,1fr))', gap:22 }}>
               {(activeCategory === 'All' ? featured : catProds).map(p => (
                 <ProductCard key={p.id || p._id} product={p} />
               ))}
@@ -203,7 +211,7 @@ export default function ShopPage() {
           )}
         </section>
 
-        {/* Top Rated / Premium section */}
+        {/* Top Rated / Premium section with smooth carousel navigation */}
         {topRated.length > 0 && (
           <section style={{ marginBottom:48 }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
@@ -219,18 +227,57 @@ export default function ShopPage() {
                   Premium Picks
                 </h2>
               </div>
-              <button onClick={() => navigate('/explore?budget_tier=Premium')}
-                style={{ background:'none', border:'none', color:'#E8633A', fontWeight:700, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
-                View All <ChevronRight size={15} />
-              </button>
+              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                {/* Carousel navigation buttons */}
+                <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                  <button
+                    onClick={() => scrollPremium(-1)}
+                    aria-label="Scroll left"
+                    title="Scroll left"
+                    style={{
+                      width:32, height:32, borderRadius:'50%', background:'#fff',
+                      border:'1.5px solid #EADFD4', display:'flex', alignItems:'center',
+                      justifyContent: 'center', cursor:'pointer', color:'#665D57',
+                      boxShadow:'0 2px 8px rgba(0,0,0,.04)', transition:'all .15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#E8633A'; e.currentTarget.style.color = '#E8633A'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#EADFD4'; e.currentTarget.style.color = '#665D57'; }}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    onClick={() => scrollPremium(1)}
+                    aria-label="Scroll right"
+                    title="Scroll right"
+                    style={{
+                      width:32, height:32, borderRadius:'50%', background:'#fff',
+                      border:'1.5px solid #EADFD4', display:'flex', alignItems:'center',
+                      justifyContent: 'center', cursor:'pointer', color:'#665D57',
+                      boxShadow:'0 2px 8px rgba(0,0,0,.04)', transition:'all .15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#E8633A'; e.currentTarget.style.color = '#E8633A'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#EADFD4'; e.currentTarget.style.color = '#665D57'; }}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+                <button onClick={() => navigate('/explore?budget_tier=Premium')}
+                  style={{ background:'none', border:'none', color:'#E8633A', fontWeight:700, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+                  View All <ChevronRight size={15} />
+                </button>
+              </div>
             </div>
-            <div style={{
-              display:'flex', gap:16, overflowX:'auto', paddingBottom:8,
-              scrollbarWidth:'none',
-            }}>
+            {/* Horizontal scroll container with balanced 260px cards and scroll snap */}
+            <div
+              ref={premiumScrollRef}
+              style={{
+                display:'flex', gap:22, overflowX:'auto', padding:'4px 4px 18px',
+                scrollbarWidth:'none', scrollBehavior:'smooth', scrollSnapType:'x mandatory',
+              }}
+            >
               {topRated.map(p => (
-                <div key={p.id||p._id} style={{ flexShrink:0, width:200 }}>
-                  <ProductCard product={p} size="sm" />
+                <div key={p.id||p._id} style={{ flexShrink:0, width:260, scrollSnapAlign:'start' }}>
+                  <ProductCard product={p} />
                 </div>
               ))}
             </div>

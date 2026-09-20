@@ -332,9 +332,10 @@ export default function ExplorePage() {
             </div>
 
             {loading && products.length === 0 ? (
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:16 }}>
-                {[...Array(12)].map((_,i) => (
-                  <div key={i} style={{ height:270, borderRadius:20, background:'linear-gradient(90deg,#f0e8e0 25%,#faf5f0 50%,#f0e8e0 75%)', backgroundSize:'200%', animation:'shimmer 1.5s infinite' }} />
+              /* Spacious Skeleton Loading Grid */
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:20 }}>
+                {[...Array(9)].map((_,i) => (
+                  <div key={i} style={{ height:380, borderRadius:24, background:'linear-gradient(90deg,#f0e8e0 25%,#faf5f0 50%,#f0e8e0 75%)', backgroundSize:'200%', animation:'shimmer 1.5s infinite' }} />
                 ))}
               </div>
             ) : products.length === 0 ? (
@@ -349,7 +350,8 @@ export default function ExplorePage() {
               </div>
             ) : (
               <>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:16 }}>
+                {/* Spacious 3-4 Column Grid with Balanced Card Dimensions */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:20 }}>
                   {products.map(p => <ProductCard key={p.id||p._id} product={p} />)}
                 </div>
                 {products.length < total && (

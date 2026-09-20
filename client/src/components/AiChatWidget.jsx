@@ -4,6 +4,7 @@ import { X, Send, Sparkles, Star, ShoppingBag, ChevronRight, Bot, User } from 'l
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import RobotMascot from './RobotMascot';
 
 // ─── Suggested quick-prompts shown when chat is empty ────────────────────────
 const QUICK_PROMPTS = [
@@ -178,27 +179,12 @@ export default function AiChatWidget() {
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* ── Floating Action Button ── */}
+      {/* ── Floating Action Button (Animated Mascot with Eye Tracking) ── */}
       {!open && (
-        <button
-          id="ai-chat-fab"
+        <RobotMascot
           onClick={() => setOpen(true)}
-          style={{
-            position: 'fixed', bottom: 24, right: 24, zIndex: 1000,
-            width: 58, height: 58, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #E8633A, #c94f2a)',
-            border: 'none', cursor: 'pointer',
-            boxShadow: '0 6px 28px rgba(232,99,58,.45)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'transform .2s, box-shadow .2s',
-            animation: pulse ? 'ai-fab-pulse 2s ease-in-out infinite' : 'none',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 8px 36px rgba(232,99,58,.55)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(232,99,58,.45)'; }}
-          aria-label="Open AI Shopping Assistant"
-        >
-          <Sparkles size={26} color="#fff" />
-        </button>
+          pulse={pulse}
+        />
       )}
 
       {/* ── Chat Panel ── */}
@@ -207,8 +193,8 @@ export default function AiChatWidget() {
           id="ai-chat-panel"
           style={{
             position: 'fixed', bottom: 20, right: 20, zIndex: 1000,
-            width: 400, maxWidth: 'calc(100vw - 32px)',
-            height: 560, maxHeight: 'calc(100vh - 40px)',
+            width: 425, maxWidth: 'calc(100vw - 32px)',
+            height: 600, maxHeight: 'calc(100vh - 40px)',
             borderRadius: 24,
             background: '#FDFBF7',
             border: '1.5px solid #EADFD4',

@@ -58,7 +58,8 @@ export default function WishlistPage() {
             </button>
           </div>
         ) : (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:16 }}>
+          /* Spacious Wishlist Grid with Balanced Proportions */
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(250px,1fr))', gap:22 }}>
             {items.map(product => (
               <div key={product.id} style={{ position:'relative' }}>
                 <ProductCard product={product} />

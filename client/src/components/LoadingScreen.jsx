@@ -1,42 +1,36 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Leaf } from 'lucide-react';
+import { Leaf, Sparkles } from 'lucide-react';
 
 /**
- * Diagnostic status lines cycled in exact order to simulate
- * the AI bio-telemetry formulation calculation.
+ * ==============================================================================
+ * LoadingScreen Component — Luxury Biotech AI Calibration Stage
+ * ==============================================================================
+ *
+ * Provides a commanding, cinematic loading ritual for Glow More.
+ * Features:
+ *   - Expanded, high-presence geometric staging (220px ring, 80px center badge)
+ *   - Multi-orbital particle physics with glowing active molecule nodes
+ *   - Live telemetry status cycling with explainable formulation diagnostic lines
+ *   - High-contrast animated progress bar with glowing leading-edge beam
+ *   - Dual-mode support (fullscreen app calibration vs inline route transition)
  */
-const STATUS_STEPS = [
+
+const DEFAULT_STATUS_STEPS = [
   'Calibrating skin biomarkers...',
   'Cross-referencing active ingredients...',
   'Running compatibility diagnostics...',
-  'Finalizing your formulation match...'
+  'Finalizing your formulation match...',
 ];
 
-/**
- * LoadingScreen Component
- * 
- * "Formulation Engine Initializing" — Premium biotech AI loading screen.
- * 
- * Features:
- * 1. Background: Cream base (#F6EFE9) with subtle particle dot grid and drifting terracotta aura.
- * 2. Center Visual: Glowing brand badge with heartbeat scan ring, animated SVG circular progress ring,
- *    and orbiting active-ingredient electron particles.
- * 3. Telemetry Feedback: Fraunces headline, cycling status lines with AnimatePresence crossfades,
- *    and non-linear percentage counter (0% -> 100%).
- * 4. Exit Transition: Satisfying pulse flash at 100%, followed by a graceful scale+fade exit (1 -> 1.05).
- * 5. Accessibility: Full prefers-reduced-motion fallback with simplified motion.
- * 6. Variants: Supports 'fullscreen' (default app mount overlay) or 'inline' (route/section transitions).
- * 
- * @param {Object} props
- * @param {Function} [props.onComplete] - Callback fired when progress reaches 100% and exit finishes.
- * @param {'fullscreen'|'inline'} [props.variant='fullscreen'] - Display layout mode.
- * @param {number} [props.duration=2100] - Total calibration time in milliseconds (under 2.5s).
- */
 export default function LoadingScreen({
   onComplete,
   variant = 'fullscreen',
-  duration = 2100
+  duration = 1800,
+  title = 'GLOW MORE',
+  subtitle = 'Explainable Beauty AI',
+  statusSteps = DEFAULT_STATUS_STEPS,
+  telemetryLabel = 'Bio-Match Score',
 }) {
   const shouldReduceMotion = useReducedMotion();
 
@@ -53,26 +47,27 @@ export default function LoadingScreen({
   // Timing references
   const [initialTime] = useState(() => Date.now());
   const startTimeRef = useRef(initialTime);
-  const reqAnimRef = useRef(null);
+  const timerRef = useRef(null);
 
-  // SVG Progress Ring Geometry
-  const ringSize = 160;
-  const strokeWidth = 3.5;
+  // SVG Progress Ring Geometry (Expanded to 220px for imposing presence)
+  const ringSize = 220;
+  const strokeWidth = 4.5;
   const center = ringSize / 2;
-  const radius = center - strokeWidth - 8;
+  const radius = center - strokeWidth - 12;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
-  // Non-linear calibration progress loop
+  // Reliable progress animation loop
   useEffect(() => {
     startTimeRef.current = Date.now();
 
-    const updateFrame = () => {
+    const interval = 25; // 40fps update rate
+    timerRef.current = setInterval(() => {
       const elapsed = Date.now() - startTimeRef.current;
       const t = Math.min(1, elapsed / duration);
 
-      // Organic easing: quick start, thoughtful pause in the 70s for computation, snappy finish
-      const easedProgress = Math.min(
+      // Organic easing curve
+      const eased = Math.min(
         100,
         Math.round(
           t < 0.7
@@ -81,9 +76,9 @@ export default function LoadingScreen({
         )
       );
 
-      setProgress(easedProgress);
+      setProgress(eased);
 
-      // Cycle status lines based on completion phase
+      // Cycle status lines matching calibration thresholds
       if (t < 0.28) {
         setStatusIndex(0);
       } else if (t < 0.58) {
@@ -94,39 +89,30 @@ export default function LoadingScreen({
         setStatusIndex(3);
       }
 
-      if (t < 1) {
-        reqAnimRef.current = requestAnimationFrame(updateFrame);
-      } else {
+      if (t >= 1) {
+        clearInterval(timerRef.current);
         setProgress(100);
         setIsFlashing(true);
 
-        // Flash and trigger exit
-        const exitTimer = setTimeout(() => {
+        setTimeout(() => {
           setIsFinished(true);
           if (onComplete) {
             onComplete();
           }
-        }, 320);
-
-        return () => clearTimeout(exitTimer);
+        }, 280);
       }
-    };
-
-    reqAnimRef.current = requestAnimationFrame(updateFrame);
+    }, interval);
 
     return () => {
-      if (reqAnimRef.current) {
-        cancelAnimationFrame(reqAnimRef.current);
-      }
+      if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [duration, onComplete]);
 
-  // If finished and in fullscreen mode, we let the wrapper handle unmounting
   const isFullscreen = variant === 'fullscreen';
 
   const containerClasses = isFullscreen
-    ? 'fixed inset-0 z-[9999] flex items-center justify-center bg-[#F6EFE9] text-[#231E1B] overflow-hidden select-none'
-    : 'relative w-full py-16 flex items-center justify-center bg-[#F6EFE9] text-[#231E1B] rounded-3xl overflow-hidden select-none';
+    ? 'fixed inset-0 z-[9999] flex items-center justify-center bg-[#F6EFE9] text-[#231E1B] overflow-hidden select-none p-4'
+    : 'relative w-full py-16 flex items-center justify-center bg-[#F6EFE9] text-[#231E1B] rounded-3xl overflow-hidden select-none p-4';
 
   return (
     <AnimatePresence>
@@ -136,108 +122,100 @@ export default function LoadingScreen({
           initial={{ opacity: 1, scale: 1 }}
           exit={{
             opacity: 0,
-            scale: shouldReduceMotion ? 1 : 1.05,
-            transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] }
+            scale: shouldReduceMotion ? 1 : 1.04,
+            transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
           }}
           className={containerClasses}
           aria-live="polite"
           aria-label="Loading Glow More formulation engine"
         >
-          {/* ==================================================================
-              1. BACKGROUND (Ambient gradient blob + subtle particle dot field)
-              ================================================================== */}
-          {/* Faint Dot Grid Pattern */}
+          {/* Subtle Precision Grid Background */}
           <div
-            className="absolute inset-0 opacity-[0.035] pointer-events-none"
+            className="absolute inset-0 opacity-[0.04] pointer-events-none"
             style={{
-              backgroundImage: 'radial-gradient(#231E1B 1.2px, transparent 1.2px)',
-              backgroundSize: '22px 22px'
+              backgroundImage: 'radial-gradient(#231E1B 1.5px, transparent 1.5px)',
+              backgroundSize: '24px 24px',
             }}
           />
 
-          {/* Soft Pulsing Ambient Terracotta Blob */}
+          {/* Deep Ambient Terracotta Glow Aura */}
           <motion.div
             animate={
               shouldReduceMotion
-                ? { opacity: 0.15 }
+                ? { opacity: 0.2 }
                 : {
-                    scale: [1, 1.2, 1],
-                    opacity: [0.12, 0.22, 0.12],
-                    x: [-12, 12, -12],
-                    y: [-10, 10, -10]
+                    scale: [1, 1.25, 1],
+                    opacity: [0.18, 0.32, 0.18],
+                    x: [-15, 15, -15],
+                    y: [-12, 12, -12],
                   }
             }
-            transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute w-[420px] h-[420px] rounded-full bg-gradient-to-br from-[#E8633A] via-[#F38763] to-amber-300 blur-[110px] pointer-events-none -z-10"
+            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute w-[540px] h-[540px] rounded-full bg-gradient-to-br from-[#E8633A] via-[#F38763] to-amber-300 blur-[130px] pointer-events-none -z-10"
           />
 
-          {/* Secondary Sage Bio-Glow Blob */}
-          <div className="absolute w-[300px] h-[300px] rounded-full bg-[#8BB59A]/15 blur-[90px] pointer-events-none -z-10 -bottom-10 -right-10" />
+          {/* Secondary Botanical Bio-Glow Aura */}
+          <div className="absolute w-[400px] h-[400px] rounded-full bg-[#8BB59A]/20 blur-[110px] pointer-events-none -z-10 -bottom-12 -right-12" />
 
           {/* ==================================================================
-              2. CENTER VISUAL (Hero animation: badge, progress ring, orbiting dots)
+              LUXURY FROSTED GLASS CENTERPIECE CARD (Expanded & Imposing)
               ================================================================== */}
-          <div className="flex flex-col items-center justify-center text-center px-6 max-w-sm w-full relative z-10">
-            
+          <div className="relative flex flex-col items-center justify-center text-center px-8 sm:px-12 py-10 sm:py-12 max-w-xl w-full rounded-[36px] sm:rounded-[44px] bg-white/75 backdrop-blur-2xl border border-white/70 shadow-[0_24px_70px_rgba(35,30,27,0.12)] z-10">
+
             {/* Circular Orbit & Ring Stage */}
-            <div className="relative flex items-center justify-center mb-6" style={{ width: ringSize, height: ringSize }}>
-              
-              {/* Scan Pulse Glow Ring (1.5s Loop) */}
+            <div
+              className="relative flex items-center justify-center mb-7"
+              style={{ width: ringSize, height: ringSize }}
+            >
+              {/* Scan Pulse Glow Wave */}
               <motion.div
                 animate={
                   shouldReduceMotion
                     ? {}
                     : {
-                        scale: [0.95, 1.32, 0.95],
-                        opacity: [0.45, 0, 0.45]
+                        scale: [0.92, 1.36, 0.92],
+                        opacity: [0.5, 0, 0.5],
                       }
                 }
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeOut' }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
                 className="absolute inset-0 rounded-full border border-[#E8633A]/60 pointer-events-none"
               />
 
-              {/* Secondary Outer Ripple */}
-              {!shouldReduceMotion && (
-                <motion.div
-                  animate={{
-                    scale: [1, 1.45, 1],
-                    opacity: [0.25, 0, 0.25]
-                  }}
-                  transition={{ duration: 1.5, delay: 0.25, repeat: Infinity, ease: 'easeOut' }}
-                  className="absolute inset-0 rounded-full border border-[#E8633A]/30 pointer-events-none"
-                />
-              )}
+              {/* Outer Secondary Orbit Track */}
+              <div className="absolute inset-[-14px] rounded-full border border-[#EDE2D7]/70 pointer-events-none" />
 
-              {/* Orbiting Particle 1: Primary Active Molecule */}
+              {/* Orbiting Molecule Node 1: Vitamin C / Niacinamide Active */}
               {!shouldReduceMotion && (
                 <motion.div
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 3.2, repeat: Infinity, ease: 'linear' }}
-                  className="absolute inset-0 pointer-events-none"
+                  transition={{ duration: 3.4, repeat: Infinity, ease: 'linear' }}
+                  className="absolute inset-[-14px] pointer-events-none"
                 >
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#E8633A] shadow-[0_0_10px_#E8633A] absolute -top-1 left-1/2 -translate-x-1/2" />
+                  <div className="w-3.5 h-3.5 rounded-full bg-[#E8633A] shadow-[0_0_12px_#E8633A] absolute -top-1.5 left-1/2 -translate-x-1/2 flex items-center justify-center text-white text-[8px] font-bold">
+                    ★
+                  </div>
                 </motion.div>
               )}
 
-              {/* Orbiting Particle 2: Secondary Stabilizer Particle */}
+              {/* Orbiting Molecule Node 2: Bio-Lipid Stabilizer */}
               {!shouldReduceMotion && (
                 <motion.div
                   animate={{ rotate: -360 }}
-                  transition={{ duration: 4.6, repeat: Infinity, ease: 'linear' }}
+                  transition={{ duration: 4.8, repeat: Infinity, ease: 'linear' }}
                   className="absolute inset-0 pointer-events-none"
                 >
-                  <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_#F59E0B] absolute -bottom-1 left-1/2 -translate-x-1/2" />
+                  <div className="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_10px_#F59E0B] absolute -bottom-1.5 left-1/2 -translate-x-1/2" />
                 </motion.div>
               )}
 
-              {/* Orbiting Particle 3: Bio-Lipid Electron */}
+              {/* Orbiting Molecule Node 3: Peptide Matrix */}
               {!shouldReduceMotion && (
                 <motion.div
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 6.2, repeat: Infinity, ease: 'linear' }}
+                  transition={{ duration: 6.5, repeat: Infinity, ease: 'linear' }}
                   className="absolute inset-0 pointer-events-none"
                 >
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#E8633A]/80 shadow-[0_0_6px_#E8633A] absolute top-1/2 -right-0.5 -translate-y-1/2" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#3A7BD5] shadow-[0_0_8px_#3A7BD5] absolute top-1/2 -right-1.5 -translate-y-1/2" />
                 </motion.div>
               )}
 
@@ -251,9 +229,12 @@ export default function LoadingScreen({
                 <defs>
                   <linearGradient id="glowRingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#E8633A" />
-                    <stop offset="60%" stopColor="#F27A52" />
+                    <stop offset="50%" stopColor="#F27A52" />
                     <stop offset="100%" stopColor="#F59E0B" />
                   </linearGradient>
+                  <filter id="ringGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#E8633A" floodOpacity="0.4" />
+                  </filter>
                 </defs>
 
                 {/* Track Background */}
@@ -262,12 +243,12 @@ export default function LoadingScreen({
                   cy={center}
                   r={radius}
                   fill="none"
-                  stroke="#EADFD4"
+                  stroke="#EDE2D7"
                   strokeWidth={strokeWidth}
-                  className="opacity-70"
+                  className="opacity-60"
                 />
 
-                {/* Animated Calibrating Fill */}
+                {/* Calibrating Progress Arc */}
                 <circle
                   cx={center}
                   cy={center}
@@ -278,11 +259,12 @@ export default function LoadingScreen({
                   strokeLinecap="round"
                   strokeDasharray={circumference}
                   strokeDashoffset={strokeDashoffset}
+                  filter="url(#ringGlow)"
                   className="transition-[stroke-dashoffset] duration-150 ease-out"
                 />
               </svg>
 
-              {/* Animated Logo Mark Centerpiece */}
+              {/* Imposing Centerpiece Brand Badge (w-20 h-20) */}
               <motion.div
                 animate={
                   isFlashing
@@ -292,60 +274,65 @@ export default function LoadingScreen({
                     : { scale: [1, 1.04, 1] }
                 }
                 transition={{ duration: 0.35, ease: 'easeOut' }}
-                className="absolute w-16 h-16 rounded-2xl bg-gradient-to-br from-[#E8633A] via-[#E8633A] to-[#D44E28] flex items-center justify-center text-white shadow-xl shadow-[#E8633A]/30 z-10"
+                className="absolute w-20 h-20 rounded-3xl bg-gradient-to-br from-[#E8633A] via-[#E8633A] to-[#D44E28] flex items-center justify-center text-white shadow-2xl shadow-[#E8633A]/40 z-10 border border-white/30"
               >
-                <Leaf className="w-8 h-8 stroke-[2.2]" />
+                <Leaf className="w-10 h-10 stroke-[2.2]" />
               </motion.div>
-
             </div>
 
-            {/* ==================================================================
-                3. TEXT BELOW LOGO (Brand Title, Telemetry %, Status Cycling)
-                ================================================================== */}
-            {/* Brand Title */}
-            <div className="space-y-0.5 mb-3">
-              <h2 className="text-xl sm:text-2xl font-bold font-brand tracking-tight text-[#231E1B]">
-                GLOW MORE
+            {/* Brand Title & Clinical Subtitle */}
+            <div className="space-y-1 mb-4">
+              <h2 className="text-2xl sm:text-3xl font-extrabold font-brand tracking-tight text-[#231E1B]">
+                {title}
               </h2>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#E8633A] bg-[#E8633A]/10 border border-[#E8633A]/20 px-2.5 py-0.5 rounded-full inline-block">
-                Explainable Beauty AI
-              </span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8633A]/10 border border-[#E8633A]/25 text-[#E8633A] text-xs font-bold tracking-wide uppercase">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{subtitle}</span>
+              </div>
             </div>
 
-            {/* Cycling Status Text with AnimatePresence Fade-Crossfade */}
-            <div className="h-7 flex items-center justify-center my-1 w-full overflow-hidden">
+            {/* Dynamic Status Display with Fade Transition */}
+            <div className="h-8 flex items-center justify-center my-1 w-full overflow-hidden">
               <AnimatePresence>
                 <motion.p
                   key={statusIndex}
-                  initial={{ opacity: 0, y: 6 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
+                  exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.2, ease: 'easeOut' }}
-                  className="text-xs font-semibold text-[#665D57] tracking-tight truncate"
+                  className="text-sm font-semibold text-[#5C534D] tracking-tight flex items-center gap-2"
                 >
-                  {STATUS_STEPS[statusIndex]}
+                  <span className="w-2 h-2 rounded-full bg-[#E8633A] animate-pulse" />
+                  <span>{statusSteps[statusIndex]}</span>
                 </motion.p>
               </AnimatePresence>
             </div>
 
-            {/* Percentage Counter & Telemetry Line */}
-            <div className="w-full max-w-[190px] mt-1 space-y-1.5">
-              <div className="flex justify-between items-center text-[10px] font-mono font-bold text-[#8A7D75]">
-                <span className="uppercase tracking-wider">Bio-Match Score</span>
-                <span className="text-[#E8633A] font-extrabold">{progress}%</span>
+            {/* Expanded Telemetry Progress Bar & Live Counter */}
+            <div className="w-full max-w-sm mt-3 space-y-2">
+              <div className="flex justify-between items-baseline text-xs font-mono font-bold text-[#7A706A]">
+                <span className="uppercase tracking-wider text-[11px]">{telemetryLabel}</span>
+                <span className="text-xl font-black text-[#E8633A]">{progress}%</span>
               </div>
 
-              {/* Micro Progress Bar */}
-              <div className="w-full bg-[#EADFD4] h-1 rounded-full overflow-hidden">
+              {/* Progress Track Bar */}
+              <div className="w-full bg-[#EADFD4] h-2 rounded-full overflow-hidden shadow-inner">
                 <div
-                  className="bg-gradient-to-r from-[#E8633A] to-amber-500 h-full rounded-full transition-all duration-100 ease-out"
+                  className="bg-gradient-to-r from-[#E8633A] via-[#F27A52] to-amber-500 h-full rounded-full transition-all duration-100 ease-out shadow-sm"
                   style={{ width: `${progress}%` }}
                 />
+              </div>
+
+              {/* 4-Stage Calibration Nodes */}
+              <div className="flex justify-between text-[10px] text-[#A0938A] font-semibold pt-1">
+                <span className={progress >= 25 ? 'text-[#E8633A] font-bold' : ''}>Biomarkers</span>
+                <span className={progress >= 50 ? 'text-[#E8633A] font-bold' : ''}>Actives Matrix</span>
+                <span className={progress >= 75 ? 'text-[#E8633A] font-bold' : ''}>Equivalence</span>
+                <span className={progress >= 100 ? 'text-[#E8633A] font-bold' : ''}>Match Ready</span>
               </div>
             </div>
 
           </div>
-
         </motion.div>
       )}
     </AnimatePresence>

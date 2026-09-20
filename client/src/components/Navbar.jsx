@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useCompare } from '../context/CompareContext';
 import api from '../api/axios';
 
 /**
@@ -27,10 +28,11 @@ import api from '../api/axios';
  *   - Generous breathing room separating it from the navigation links.
  *
  * Zone 2 (Center):
- *   - Centered navigation links ("Shop", "Explore", "Dashboard", "Wishlist", "Orders").
+ *   - Centered navigation links ("Shop", "Explore", "Compare", "Dashboard", "Wishlist", "Orders").
  *   - Uniform hit-area and padding (px-4 py-2) across both active and inactive links.
  *   - Text size text-[15px] and font-semibold for crisp presence and legibility.
  *   - Active link gets an integrated soft terracotta pill highlight (#E8633A/10).
+ *   - "Compare" link features an orange badge indicator when products are staged.
  *
  * Zone 3 (Right):
  *   - Search Bar: Wider default width (w-60 to w-64) with subtle warm border (#EADFD4).
@@ -47,6 +49,7 @@ import api from '../api/axios';
 const NAV_LINKS = [
   { label: 'Shop',      to: '/shop' },
   { label: 'Explore',   to: '/explore' },
+  { label: 'Compare',   to: '/compare', hasBadge: true },
   { label: 'Dashboard', to: '/dashboard' },
   { label: 'Wishlist',  to: '/wishlist' },
   { label: 'Orders',    to: '/orders' },
@@ -56,6 +59,7 @@ export default function Navbar() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { cartCount, wishCount, clearUserData } = useCart();
+  const { compareCount } = useCompare();
   const { user, logout, isAuthenticated } = useAuth();
 
   const [menuOpen, setMenuOpen]       = useState(false);
@@ -134,17 +138,23 @@ export default function Navbar() {
           >
             {NAV_LINKS.map((link) => {
               const active = isActive(link.to);
+              const showBadge = link.hasBadge && compareCount > 0;
               return (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`px-4 py-2 rounded-full text-[15px] font-semibold tracking-tight transition-all duration-200 ${
+                  className={`relative px-4 py-2 rounded-full text-[15px] font-semibold tracking-tight transition-all duration-200 inline-flex items-center gap-1.5 ${
                     active
                       ? 'bg-[#E8633A]/10 text-[#E8633A] font-bold shadow-2xs'
                       : 'text-[#5C534D] hover:text-[#E8633A] hover:bg-[#FAF6F2]'
                   }`}
                 >
-                  {link.label}
+                  <span>{link.label}</span>
+                  {showBadge && (
+                    <span className="min-w-[18px] h-[18px] rounded-full bg-[#E8633A] text-white text-[10px] font-bold flex items-center justify-center px-1 shadow-2xs leading-none">
+                      {compareCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -337,18 +347,24 @@ export default function Navbar() {
             <div className="space-y-1">
               {NAV_LINKS.map((link) => {
                 const active = isActive(link.to);
+                const showBadge = link.hasBadge && compareCount > 0;
                 return (
                   <Link
                     key={link.to}
                     to={link.to}
                     onClick={() => setMenuOpen(false)}
-                    className={`flex items-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
                       active
                         ? 'bg-[#E8633A]/10 text-[#E8633A]'
                         : 'text-[#231E1B] hover:bg-[#FAF6F2]'
                     }`}
                   >
-                    {link.label}
+                    <span>{link.label}</span>
+                    {showBadge && (
+                      <span className="min-w-[18px] h-[18px] rounded-full bg-[#E8633A] text-white text-[10px] font-bold flex items-center justify-center px-1 shadow-2xs leading-none">
+                        {compareCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}

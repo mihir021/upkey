@@ -1,6 +1,6 @@
 import React, { Suspense, useRef, useState, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, OrbitControls, Environment, ContactShadows, Float } from '@react-three/drei';
+import { useGLTF, OrbitControls, Environment, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 
 const DEFAULT_MODEL_URL = '/assets/cosmetic_jar.glb';
@@ -59,7 +59,7 @@ function ProductMesh({ url }) {
   const { scene } = useGLTF(url);
   const ref = useRef();
 
-  // Normalize model scale and center once when scene is loaded
+  // Normalize model scale and ground base at y = -1.0 so it sits firmly on the shadow plane
   const model = useMemo(() => {
     const inst = scene.clone(true);
     inst.traverse(n => {
@@ -69,23 +69,32 @@ function ProductMesh({ url }) {
       }
     });
     inst.updateMatrixWorld(true);
-    const box  = new THREE.Box3().setFromObject(inst);
+    const box = new THREE.Box3().setFromObject(inst);
     const size = box.getSize(new THREE.Vector3());
-    const max  = Math.max(size.x, size.y, size.z, 0.001);
-    inst.scale.setScalar(3.6 / max);
+    const max = Math.max(size.x, size.y, size.z, 0.001);
+
+    // Scale so the largest dimension fits comfortably (~2.7 units)
+    inst.scale.setScalar(2.7 / max);
     inst.updateMatrixWorld(true);
-    const box2   = new THREE.Box3().setFromObject(inst);
+
+    const box2 = new THREE.Box3().setFromObject(inst);
     const center = box2.getCenter(new THREE.Vector3());
+
+    // Center horizontally (X) and in depth (Z)
     inst.position.x -= center.x;
     inst.position.z -= center.z;
-    inst.position.y -= box2.min.y;
+
+    // Ground the base of the model firmly at y = -1.0
+    // ContactShadows is placed at y = -1.0, ensuring the product rests on the surface
+    inst.position.y -= box2.min.y; // aligns base to y = 0
+    inst.position.y -= 1.0;        // shifts base to y = -1.0
     return inst;
   }, [scene]);
 
-  useFrame((state) => {
+  // Smooth continuous auto-rotation around Y axis — no vertical bobbing to prevent floating
+  useFrame(() => {
     if (!ref.current) return;
-    ref.current.rotation.y += 0.004;
-    ref.current.position.y = Math.sin(state.clock.elapsedTime * 1.1) * 0.06;
+    ref.current.rotation.y += 0.003;
   });
 
   return (
@@ -165,43 +174,40 @@ export default function Product3DViewer({ modelUrl, category, style }) {
       }} />
 
       <Canvas
-        camera={{ position: [0, 1.4, 5.5], fov: 36 }}
+        camera={{ position: [0, 0.6, 4.6], fov: 34 }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
         shadows
         style={{ width: '100%', height: '100%' }}
       >
-        {/* Lighting Setup */}
+        {/* Lighting Setup — studio presentation */}
         <ambientLight intensity={1.6} />
         <directionalLight position={[5, 8, 5]} intensity={2.4} castShadow />
         <pointLight position={[-4, 2, 3]} intensity={1.4} color={accentColor} />
         <pointLight position={[3, -1, -3]} intensity={0.8} color="#ffffff" />
 
         <Suspense fallback={<LoadingFallback />}>
-          <ModelErrorBoundary fallback={
-            <Float speed={1.2} rotationIntensity={0.15} floatIntensity={0.2}>
-              <ProductMesh url={DEFAULT_MODEL_URL} accentColor={accentColor} />
-            </Float>
-          }>
-            <Float speed={1.2} rotationIntensity={0.15} floatIntensity={0.2}>
-              <ProductMesh url={validUrl} accentColor={accentColor} />
-            </Float>
+          <ModelErrorBoundary fallback={<ProductMesh url={DEFAULT_MODEL_URL} />}>
+            <ProductMesh url={validUrl} />
           </ModelErrorBoundary>
+
+          {/* Ground contact shadow placed precisely at the model base (y = -1.0) */}
           <ContactShadows
-            position={[0, -1.4, 0]}
-            opacity={0.35}
-            scale={8}
-            blur={2.5}
-            far={4}
+            position={[0, -1.0, 0]}
+            opacity={0.4}
+            scale={7.5}
+            blur={2.2}
+            far={3.5}
             color="#231E1B"
           />
           <Environment preset="city" />
         </Suspense>
 
         <OrbitControls
+          target={[0, 0.15, 0]}
           enablePan={false}
-          minDistance={2.5}
-          maxDistance={10}
+          minDistance={2.2}
+          maxDistance={9}
           minPolarAngle={Math.PI / 6}
           maxPolarAngle={(5 * Math.PI) / 6}
         />

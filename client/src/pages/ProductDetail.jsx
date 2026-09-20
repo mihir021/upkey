@@ -371,14 +371,14 @@ export default function ProductDetail() {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs — aligned 2px baseline indicator line */}
         <div style={{ marginTop:40, borderBottom:'2px solid #EADFD4', display:'flex', gap:0 }}>
           {['description','ingredients','reviews'].map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
               padding:'12px 24px', background:'none', border:'none',
               fontSize:14, fontWeight:600, cursor:'pointer', textTransform:'capitalize',
               color: tab === t ? '#E8633A' : '#665D57',
-              borderBottom: tab === t ? '3px solid #E8633A' : '3px solid transparent',
+              borderBottom: tab === t ? '2px solid #E8633A' : '2px solid transparent',
               marginBottom:-2, transition:'all .15s',
             }}>{t === 'ingredients' ? 'Ingredients' : t.charAt(0).toUpperCase() + t.slice(1)}</button>
           ))}
@@ -389,15 +389,17 @@ export default function ProductDetail() {
             <div style={{ maxWidth:680 }}>
               <h3 style={{ margin:'0 0 12px', color:'#231E1B', fontSize:16, fontWeight:700 }}>About this Product</h3>
               <p style={{ color:'#665D57', lineHeight:1.75, fontSize:14.5, margin:'0 0 20px' }}>
-                Introducing the <strong>{product.name}</strong> by <strong>{product.brand}</strong> — a {product.budget_tier?.toLowerCase()} {product.category?.toLowerCase()} crafted for {product.skin_types?.join(' and ')} skin types. 
-                Formulated to address {product.concerns_list?.join(', ')}, this product delivers visible results with regular use.
+                Introducing the <strong>{product.name}</strong> by <strong>{product.brand}</strong> — a {product.budget_tier ? `${product.budget_tier.toLowerCase()} ` : ''}{product.category?.toLowerCase()} crafted for {product.skin_types?.join(' and ') || 'all'} skin types.{' '}
+                {product.concerns_list && product.concerns_list.length > 0 && product.concerns_list[0]
+                  ? `Formulated to address ${product.concerns_list.join(', ')}, this product delivers visible results with regular use.`
+                  : 'Formulated with targeted active ingredients, this product delivers visible results with regular use.'}{' '}
                 Suitable for all skin tones, it fits seamlessly into any skincare routine.
               </p>
               <h4 style={{ margin:'0 0 10px', color:'#231E1B', fontSize:14, fontWeight:700 }}>Key Benefits</h4>
               <ul style={{ color:'#665D57', lineHeight:2, fontSize:14, paddingLeft:20 }}>
-                {product.concerns_list?.map(c => <li key={c}>Addresses {c}</li>)}
-                <li>Suitable for {product.skin_types?.join(' & ')} skin</li>
-                <li>Powered by {product.ingredients_list?.slice(0,2).join(' & ')}</li>
+                {product.concerns_list?.filter(Boolean).map(c => <li key={c}>Addresses {c}</li>)}
+                {product.skin_types?.length > 0 && <li>Suitable for {product.skin_types.join(' & ')} skin</li>}
+                {product.ingredients_list?.length > 0 && <li>Powered by {product.ingredients_list.slice(0,2).join(' & ')}</li>}
               </ul>
             </div>
           )}
@@ -494,10 +496,10 @@ export default function ProductDetail() {
             <h2 style={{ margin:'0 0 20px', fontFamily:'"Playfair Display",serif', fontSize:22, fontWeight:700, color:'#231E1B' }}>
               You May Also Like
             </h2>
-            <div style={{ display:'flex', gap:16, overflowX:'auto', paddingBottom:8, scrollbarWidth:'none' }}>
+            <div style={{ display:'flex', gap:20, overflowX:'auto', padding:'4px 4px 16px', scrollbarWidth:'none', scrollBehavior:'smooth' }}>
               {recs.map(p => (
-                <div key={p.id||p._id} style={{ flexShrink:0, width:190 }}>
-                  <ProductCard product={p} size="sm" />
+                <div key={p.id||p._id} style={{ flexShrink:0, width:250 }}>
+                  <ProductCard product={p} />
                 </div>
               ))}
             </div>

@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { CompareProvider } from './context/CompareContext';
 import AuthGateModal from './components/AuthGateModal';
 import AiChatWidget  from './components/AiChatWidget';
+import CompareBar    from './components/CompareBar';
 import LoadingScreen from './components/LoadingScreen';
 import LandingPage    from './pages/LandingPage.jsx';
 import Signup         from './pages/Signup.jsx';
@@ -12,6 +14,7 @@ import Dashboard      from './pages/Dashboard.jsx';
 import ShopPage       from './pages/ShopPage.jsx';
 import ExplorePage    from './pages/ExplorePage.jsx';
 import ProductDetail  from './pages/ProductDetail.jsx';
+import ComparePage    from './pages/ComparePage.jsx';
 import CartPage       from './pages/CartPage.jsx';
 import WishlistPage   from './pages/WishlistPage.jsx';
 import UserProfile    from './pages/UserProfile.jsx';
@@ -37,28 +40,32 @@ function App() {
       )}
       <AuthProvider>
         <CartProvider>
-          <AuthGateModal />
-          <Routes>
-            {/* ── Public ── */}
-            <Route path="/"        element={<LandingPage />} />
-            <Route path="/signup"  element={<Signup />} />
-            <Route path="/login"   element={<Login />} />
+          <CompareProvider>
+            <AuthGateModal />
+            <Routes>
+              {/* ── Public ── */}
+              <Route path="/"        element={<LandingPage />} />
+              <Route path="/signup"  element={<Signup />} />
+              <Route path="/login"   element={<Login />} />
 
-            {/* ── Protected ── */}
-            <Route path="/shop"       element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
-            <Route path="/explore"    element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
-            <Route path="/product/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
-            <Route path="/cart"       element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
-            <Route path="/wishlist"   element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
-            <Route path="/profile"    element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-            <Route path="/orders"     element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
-            <Route path="/rewards"    element={<ProtectedRoute><RewardsPage /></ProtectedRoute>} />
-            <Route path="/dashboard"  element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              {/* ── Protected ── */}
+              <Route path="/shop"        element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
+              <Route path="/explore"     element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
+              <Route path="/compare"     element={<ProtectedRoute><ComparePage /></ProtectedRoute>} />
+              <Route path="/product/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
+              <Route path="/cart"        element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+              <Route path="/wishlist"    element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
+              <Route path="/profile"     element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+              <Route path="/orders"      element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+              <Route path="/rewards"     element={<ProtectedRoute><RewardsPage /></ProtectedRoute>} />
+              <Route path="/dashboard"   element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-          <AiChatWidget />
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+            <CompareBar />
+            <AiChatWidget />
+          </CompareProvider>
         </CartProvider>
       </AuthProvider>
     </BrowserRouter>

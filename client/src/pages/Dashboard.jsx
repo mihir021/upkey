@@ -143,14 +143,14 @@ export default function Dashboard() {
             {loadingRecent ? (
               <div style={{ display:'flex', gap:16 }}>
                 {[...Array(4)].map((_,i) => (
-                  <div key={i} style={{ flex:'0 0 180px', height:260, borderRadius:20, background:'linear-gradient(90deg,#f0e8e0 25%,#faf5f0 50%,#f0e8e0 75%)', backgroundSize:'200%', animation:'shimmer 1.5s infinite' }} />
+                  <div key={i} style={{ flex:'0 0 250px', height:360, borderRadius:24, background:'linear-gradient(90deg,#f0e8e0 25%,#faf5f0 50%,#f0e8e0 75%)', backgroundSize:'200%', animation:'shimmer 1.5s infinite' }} />
                 ))}
               </div>
             ) : (
-              <div style={{ display:'flex', gap:16, overflowX:'auto', paddingBottom:8, scrollbarWidth:'none' }}>
+              <div style={{ display:'flex', gap:20, overflowX:'auto', padding:'4px 4px 16px', scrollbarWidth:'none', scrollBehavior:'smooth' }}>
                 {recentProds.map(p => (
-                  <div key={p.id || p._id} style={{ flexShrink:0, width:180 }}>
-                    <ProductCard product={p} size="sm" />
+                  <div key={p.id || p._id} style={{ flexShrink:0, width:250 }}>
+                    <ProductCard product={p} />
                   </div>
                 ))}
               </div>
@@ -231,7 +231,8 @@ export default function Dashboard() {
                 See All <ChevronRight size={14} />
               </button>
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:16 }}>
+            {/* Spacious 3-4 Column Grid for Trending Products */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(250px,1fr))', gap:22 }}>
               {trending.map(p => <ProductCard key={p.id||p._id} product={p} />)}
             </div>
           </section>
