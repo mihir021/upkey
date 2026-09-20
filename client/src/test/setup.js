@@ -1,3 +1,4 @@
+/* global global */
 // Adds jest-dom's matchers (toBeInTheDocument, etc.) to Vitest's `expect`.
 // Runs once before the test files, via vite.config.js's `test.setupFiles`.
 import '@testing-library/jest-dom/vitest';

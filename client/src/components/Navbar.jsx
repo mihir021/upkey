@@ -15,7 +15,7 @@ const NAV_LINKS = [
 export default function Navbar() {
   const navigate  = useNavigate();
   const location  = useLocation();
-  const { cartCount, wishCount } = useCart();
+  const { cartCount, wishCount, clearUserData } = useCart();
   const { user, logout, isAuthenticated } = useAuth();
 
   const [menuOpen, setMenuOpen]     = useState(false);
@@ -201,7 +201,7 @@ export default function Navbar() {
                     </button>
                   ))}
                   <hr style={{ margin:0, border:'none', borderTop:'1px solid #EADFD4' }} />
-                  <button onClick={() => { logout(); navigate('/'); setProfileOpen(false); }}
+                  <button onClick={() => { clearUserData(); logout(); navigate('/'); setProfileOpen(false); }}
                     style={{
                       display:'flex', alignItems:'center', gap:10, width:'100%',
                       padding:'12px 18px', background:'transparent', border:'none',

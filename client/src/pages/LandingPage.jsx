@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useContext } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   ShoppingBag,
@@ -9,7 +9,6 @@ import {
   FlaskConical,
   ShieldCheck,
   Trash2,
-  LogOut,
   X
 } from 'lucide-react';
 import HeroBottle3D from '../components/HeroBottle3D';
@@ -18,6 +17,7 @@ import LandingNavbar from '../components/LandingNavbar';
 import FloatingIngredients from '../components/FloatingIngredients';
 import productsData from '../data/products.json';
 import AuthContext from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 /**
  * Glow More — Scroll-Linked 3D Product Journey
@@ -58,13 +58,18 @@ const getStaggerAnimation = (index, baseDelay = 0.18) => ({
 });
 
 export default function LandingPage() {
-  // Authentication & Service Gating Context
   const auth = useContext(AuthContext);
   const user = auth?.user || null;
   const isAuthenticated = auth?.isAuthenticated || false;
   const requireAuth = auth?.requireAuth || ((reason, cb) => { if (cb) cb(); return true; });
-  const logout = auth?.logout || (() => {});
+  const authLogout = auth?.logout || (() => {});
+  const { clearUserData } = useCart();
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    clearUserData();
+    authLogout();
+  };
 
   // Chapter-aware scroll progress (0.0 to 1.0) drives the 3D bottle S-curve.
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -223,7 +228,7 @@ export default function LandingPage() {
         productsCount={productsData.length}
         isAuthenticated={isAuthenticated}
         user={user}
-        logout={logout}
+        logout={handleLogout}
         onTakeQuiz={() => {
           requireAuth('take the clinical skin diagnostic quiz and save your personalized formulation score', () => {
             const el = document.getElementById('diagnostic');

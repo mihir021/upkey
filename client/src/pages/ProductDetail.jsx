@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, Share2, ShoppingBag, Star, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Heart, Share2, ShoppingBag, Star, CheckCircle, Box } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
 import api from '../api/axios';
 import { useCart } from '../context/CartContext';
+
+// Lazy-load the heavy 3D viewer so the rest of the page is never blocked
+const Product3DViewer = lazy(() => import('../components/Product3DViewer'));
 
 const REVIEW_NAMES = ['Priya S.','Anjali M.','Deepika R.','Nisha T.','Kavya K.',
   'Sonal P.','Ritu V.','Meera J.','Neha B.','Aisha K.','Sunita L.','Pooja D.'];
@@ -73,6 +76,7 @@ export default function ProductDetail() {
   const [qty, setQty]           = useState(1);
   const [added, setAdded]       = useState(false);
   const [copied, setCopied]     = useState(false);
+  const [viewMode, setViewMode] = useState('image'); // 'image' | '3d'
 
   useEffect(() => {
     let isMounted = true;
@@ -87,6 +91,9 @@ export default function ProductDetail() {
         setProduct(pRes.data);
         setRecs(rRes.data || []);
         viewProduct(id);
+        if (pRes.data?.is_3d || pRes.data?.cloudinary_link?.endsWith('.glb') || pRes.data?.cloudinary_link?.endsWith('.gltf')) {
+          setViewMode('3d');
+        }
       })
       .catch((err) => {
         console.error('Product fetch error:', err);
@@ -170,34 +177,81 @@ export default function ProductDetail() {
 
         {/* Main content */}
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:40, alignItems:'start' }} className="product-grid">
-          {/* Image panel */}
-          <div style={{ borderRadius:24, overflow:'hidden', background: imgBg, height:420, position:'relative', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            {src ? (
-              <img src={src} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}
-                onError={e => { e.target.style.display='none'; }} />
-            ) : (
-              <div style={{ textAlign:'center' }}>
-                <span style={{ fontSize:80 }}>✨</span>
-                <p style={{ color:'#665D57', fontWeight:600, margin:8 }}>{product.category}</p>
-              </div>
-            )}
+          {/* Image / 3D panel */}
+          <div style={{ borderRadius:24, overflow:'hidden', background: imgBg, height:420, position:'relative', display:'flex', flexDirection:'column' }}>
+
+            {/* View mode toggle tabs */}
+            <div style={{
+              display:'flex', padding:'10px 12px 0', gap:6, zIndex:5, position:'relative',
+            }}>
+              {[['image','🖼 Image'], ['3d','🧊 3D View']].map(([mode, label]) => (
+                <button key={mode} onClick={() => setViewMode(mode)} style={{
+                  padding:'5px 14px', borderRadius:20, border:'none', cursor:'pointer',
+                  fontSize:11, fontWeight:700, letterSpacing:.4,
+                  background: viewMode === mode ? '#E8633A' : 'rgba(255,255,255,0.75)',
+                  color: viewMode === mode ? '#fff' : '#665D57',
+                  backdropFilter:'blur(6px)',
+                  boxShadow: viewMode === mode ? '0 2px 10px rgba(232,99,58,.35)' : 'none',
+                  transition:'all .2s',
+                }}>{label}</button>
+              ))}
+            </div>
+
+            {/* Content area */}
+            <div style={{ flex:1, position:'relative', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              {viewMode === 'image' ? (
+                src ? (
+                  <img src={src} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover', position:'absolute', inset:0 }}
+                    onError={e => { e.target.style.display='none'; }} />
+                ) : (
+                  <div style={{ textAlign:'center', padding:20 }}>
+                    <span style={{ fontSize:56 }}>🧊</span>
+                    <p style={{ color:'#231E1B', fontWeight:700, margin:'10px 0 4px', fontSize:16 }}>Interactive 3D Model</p>
+                    <p style={{ color:'#665D57', fontSize:12, margin:'0 0 14px' }}>This product is featured in full 3D</p>
+                    <button onClick={() => setViewMode('3d')} style={{
+                      padding:'8px 20px', background:'#E8633A', color:'#fff',
+                      border:'none', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer',
+                      boxShadow:'0 2px 10px rgba(232,99,58,.35)'
+                    }}>
+                      Switch to 3D View →
+                    </button>
+                  </div>
+                )
+              ) : (
+                <Suspense fallback={
+                  <div style={{ textAlign:'center', color:'#665D57' }}>
+                    <Box size={32} style={{ margin:'0 auto 8px', display:'block', color:'#E8633A' }} />
+                    <span style={{ fontSize:12, fontWeight:600 }}>Loading 3D Model…</span>
+                  </div>
+                }>
+                  <Product3DViewer
+                    modelUrl={product.cloudinary_link}
+                    category={product.category}
+                    style={{ position:'absolute', inset:0, borderRadius:0 }}
+                  />
+                </Suspense>
+              )}
+            </div>
+
             {/* Overlay buttons */}
             <button onClick={() => toggleWishlist(product)} style={{
-              position:'absolute', top:16, right:16,
+              position:'absolute', top:52, right:16,
               width:44, height:44, borderRadius:'50%',
               background: wished ? '#E8633A' : 'rgba(255,255,255,.9)',
               border:'none', cursor:'pointer',
               display:'flex', alignItems:'center', justifyContent:'center',
               boxShadow:'0 2px 12px rgba(0,0,0,.15)',
               transition:'all .2s',
+              zIndex:6,
             }}>
               <Heart size={18} fill={wished ? '#fff' : 'none'} color={wished ? '#fff' : '#E8633A'} />
             </button>
             <button onClick={handleShare} style={{
-              position:'absolute', top:68, right:16,
+              position:'absolute', top:104, right:16,
               width:44, height:44, borderRadius:'50%',
               background:'rgba(255,255,255,.9)',
               border:'none', cursor:'pointer',
+              zIndex:6,
               display:'flex', alignItems:'center', justifyContent:'center',
               boxShadow:'0 2px 12px rgba(0,0,0,.15)',
             }}>

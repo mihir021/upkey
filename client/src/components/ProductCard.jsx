@@ -54,6 +54,8 @@ export default function ProductCard({ product, size = 'md' }) {
 
   const isSmall = size === 'sm';
 
+  const is3D    = Boolean(product.is_3d || product.cloudinary_link?.endsWith('.glb') || product.cloudinary_link?.endsWith('.gltf'));
+
   return (
     <div
       onClick={() => navigate(`/product/${product.id}`)}
@@ -96,9 +98,14 @@ export default function ProductCard({ product, size = 'md' }) {
         ) : (
           <div style={{
             display:'flex', alignItems:'center', justifyContent:'center',
-            height:'100%', flexDirection:'column', gap:8,
+            height:'100%', flexDirection:'column', gap: is3D ? 3 : 8,
           }}>
-            <span style={{ fontSize: isSmall ? 32 : 40 }}>✨</span>
+            <span style={{ fontSize: isSmall ? 28 : (is3D ? 38 : 40) }}>{is3D ? '🧊' : '✨'}</span>
+            {is3D && (
+              <span style={{ fontSize:10, color:'#E8633A', fontWeight:800, letterSpacing:.6, textTransform:'uppercase' }}>
+                3D Interactive
+              </span>
+            )}
             <span style={{ fontSize:11, color:'#665D57', fontWeight:600, letterSpacing:.5 }}>
               {product.category}
             </span>
@@ -121,8 +128,18 @@ export default function ProductCard({ product, size = 'md' }) {
           <Heart size={15} fill={wished ? '#fff' : 'none'} color={wished ? '#fff' : '#E8633A'} />
         </button>
 
-        {/* Budget tag */}
-        {product.budget_tier && (
+        {/* 3D or Budget tag */}
+        {is3D ? (
+          <span style={{
+            position:'absolute', top:10, left:10,
+            background:'rgba(35,30,27,0.85)', backdropFilter:'blur(4px)',
+            color:'#fff', fontSize:10, fontWeight:750,
+            padding:'2px 8px', borderRadius:20, letterSpacing:.4,
+            display:'flex', alignItems:'center', gap:4,
+          }}>
+            🧊 3D Model
+          </span>
+        ) : product.budget_tier && (
           <span style={{
             position:'absolute', top:10, left:10,
             background:'rgba(255,255,255,0.9)',

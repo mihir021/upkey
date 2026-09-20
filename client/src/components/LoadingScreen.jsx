@@ -51,7 +51,8 @@ export default function LoadingScreen({
   const [isFlashing, setIsFlashing] = useState(false);
 
   // Timing references
-  const startTimeRef = useRef(Date.now());
+  const [initialTime] = useState(() => Date.now());
+  const startTimeRef = useRef(initialTime);
   const reqAnimRef = useRef(null);
 
   // SVG Progress Ring Geometry
