@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Package, ChevronRight, ShoppingBag } from 'lucide-react';
+import { Package, ShoppingBag } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useCart } from '../context/CartContext';
 

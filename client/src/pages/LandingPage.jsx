@@ -10,8 +10,6 @@ import {
   ShieldCheck,
   Trash2,
   LogOut,
-  Sparkles,
-  Lock,
   X
 } from 'lucide-react';
 import HeroBottle3D from '../components/HeroBottle3D';
