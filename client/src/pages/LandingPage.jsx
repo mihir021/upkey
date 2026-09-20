@@ -18,6 +18,7 @@ import HeroBottle3D from '../components/HeroBottle3D';
 import LiveSkincareBackground from '../components/LiveSkincareBackground';
 import productsData from '../data/products.json';
 import AuthContext from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 /**
  * Joyory Aura — Scroll-Linked 3D Product Journey
@@ -38,6 +39,7 @@ export default function LandingPage() {
   const isAuthenticated = auth?.isAuthenticated || false;
   const requireAuth = auth?.requireAuth || ((reason, cb) => { if (cb) cb(); return true; });
   const logout = auth?.logout || (() => {});
+  const { clearUserData } = useCart();
   const [showGuestPill, setShowGuestPill] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
@@ -288,6 +290,7 @@ export default function LandingPage() {
                       type="button"
                       onClick={() => {
                         setProfileOpen(false);
+                        clearUserData();
                         logout();
                       }}
                       className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#c94f2a] hover:bg-red-50 transition-colors text-left cursor-pointer"

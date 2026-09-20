@@ -11,6 +11,11 @@ import { useAuth } from '../context/AuthContext';
 
 const PALETTE = ['#E8633A','#8B5E83','#3A7BD5','#27AE60','#F39C12','#E74C3C','#16A085','#8E44AD'];
 
+function imgSrc(p) {
+  const cl = p?.cloudinary_link || '';
+  return (!cl || cl.endsWith('.glb') || cl.endsWith('.gltf')) ? null : cl;
+}
+
 /**
  * StatCard - metric display block with luxury tinted icon backdrop
  */
@@ -225,7 +230,7 @@ export default function UserProfile() {
         </div>
 
         {/* Recent Orders */}
-        {orders.length > 0 && (
+        {orders.length > 0 ? (
           <div style={{ background:'#fff', border:'1.5px solid #EADFD4', borderRadius:24, padding:'22px 22px', marginBottom:20 }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
               <h3 style={{ margin:0, fontWeight:800, fontSize:15, color:'#231E1B' }}>Recent Orders</h3>
@@ -253,6 +258,16 @@ export default function UserProfile() {
               ))}
             </div>
           </div>
+        ) : (
+          <div style={{ background:'#fff', border:'1.5px solid #EADFD4', borderRadius:24, padding:'32px 22px', textAlign:'center', marginBottom:20 }}>
+            <Package size={42} color="#EADFD4" style={{ margin:'0 auto 12px', display:'block' }} />
+            <h3 style={{ margin:'0 0 6px', fontWeight:800, fontSize:16, color:'#231E1B' }}>No orders placed yet</h3>
+            <p style={{ margin:'0 0 16px', fontSize:13, color:'#665D57' }}>Your order history and spend analytics will populate here as you order products.</p>
+            <button onClick={() => navigate('/shop')} style={{
+              padding:'10px 24px', background:'#E8633A', color:'#fff',
+              border:'none', borderRadius:24, fontSize:13, fontWeight:700, cursor:'pointer',
+            }}>Browse Products →</button>
+          </div>
         )}
 
         {/* Wishlist preview */}
@@ -265,25 +280,35 @@ export default function UserProfile() {
               </button>
             </div>
             <div style={{ display:'flex', gap:12, overflowX:'auto', scrollbarWidth:'none' }}>
-              {Object.values(wishlist).slice(0, 6).map(p => (
-                <div key={p.id} onClick={() => navigate(`/product/${p.id}`)} style={{
-                  flexShrink:0, width:120, cursor:'pointer',
-                  background:'#F6EFE9', borderRadius:14, padding:'10px 10px 12px', textAlign:'center',
-                  border:'1px solid #EADFD4', transition:'transform .2s',
-                }}
-                  onMouseEnter={e => e.currentTarget.style.transform='translateY(-3px)'}
-                  onMouseLeave={e => e.currentTarget.style.transform=''}
-                >
-                  <div style={{ fontSize:24, marginBottom:6 }}>✨</div>
-                  <div style={{ fontSize:10, fontWeight:600, color:'#231E1B', lineHeight:1.3,
-                    display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
-                    {p.name}
+              {Object.values(wishlist).slice(0, 6).map(p => {
+                const src = imgSrc(p);
+                const is3D = Boolean(p?.is_3d || p?.cloudinary_link?.endsWith('.glb'));
+                return (
+                  <div key={p.id} onClick={() => navigate(`/product/${p.id}`)} style={{
+                    flexShrink:0, width:120, cursor:'pointer',
+                    background:'#F6EFE9', borderRadius:14, padding:'10px 10px 12px', textAlign:'center',
+                    border:'1px solid #EADFD4', transition:'transform .2s',
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.transform='translateY(-3px)'}
+                    onMouseLeave={e => e.currentTarget.style.transform=''}
+                  >
+                    <div style={{ width:48, height:48, margin:'0 auto 6px', borderRadius:10, overflow:'hidden', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      {src ? (
+                        <img src={src} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => e.target.style.display='none'} />
+                      ) : (
+                        <span style={{ fontSize:22 }}>{is3D ? '🧊' : '✨'}</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize:10, fontWeight:600, color:'#231E1B', lineHeight:1.3,
+                      display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+                      {p.name}
+                    </div>
+                    <div style={{ fontSize:11, fontWeight:800, color:'#E8633A', marginTop:4 }}>
+                      ₹{p.price_inr?.toLocaleString('en-IN')}
+                    </div>
                   </div>
-                  <div style={{ fontSize:11, fontWeight:800, color:'#E8633A', marginTop:4 }}>
-                    ₹{p.price_inr?.toLocaleString('en-IN')}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

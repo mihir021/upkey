@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, X, Send, Sparkles, Star, ShoppingBag, ChevronRight, Bot, User } from 'lucide-react';
+import { X, Send, Sparkles, Star, ShoppingBag, ChevronRight, Bot, User } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -93,7 +93,6 @@ export default function AiChatWidget() {
   const [messages, setMessages] = useState([]);       // { role: 'user'|'assistant', content, products?, intent? }
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [pulse, setPulse] = useState(true);
 
   const bottomRef = useRef(null);
@@ -107,8 +106,10 @@ export default function AiChatWidget() {
   // Focus input when chat opens
   useEffect(() => {
     if (open) {
-      setTimeout(() => inputRef.current?.focus(), 200);
-      setPulse(false);
+      setTimeout(() => {
+        inputRef.current?.focus();
+        setPulse(false);
+      }, 200);
     }
   }, [open]);
 
@@ -125,7 +126,6 @@ export default function AiChatWidget() {
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setLoading(true);
-    setError(null);
 
     try {
       // Build conversation_history from previous messages (for multi-turn)
@@ -155,7 +155,6 @@ export default function AiChatWidget() {
       }
     } catch (err) {
       const msg = err?.response?.data?.message || 'AI service is currently unavailable. Please try again.';
-      setError(msg);
       setMessages(prev => [...prev, { role: 'assistant', content: msg, isError: true }]);
     } finally {
       setLoading(false);
