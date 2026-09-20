@@ -3,8 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, Share2, ShoppingBag, Star, CheckCircle, Box } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
+import SkinMatchCard from '../components/SkinMatchCard';
 import api from '../api/axios';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 // Lazy-load the heavy 3D viewer so the rest of the page is never blocked
 const Product3DViewer = lazy(() => import('../components/Product3DViewer'));
@@ -67,6 +69,7 @@ function imgSrc(p) {
 export default function ProductDetail() {
   const { id }  = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { addToCart, toggleWishlist, inWishlist, inCart, viewProduct } = useCart();
 
   const [product, setProduct]   = useState(null);
@@ -319,6 +322,9 @@ export default function ProductDetail() {
                 </span>
               ))}
             </div>
+
+            {/* AI Skin Compatibility Match Card */}
+            <SkinMatchCard product={product} user={user} />
 
             {/* Quantity + Actions */}
             <div style={{ display:'flex', alignItems:'center', gap:16, marginTop:8 }}>
