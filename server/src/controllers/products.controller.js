@@ -26,8 +26,9 @@ async function getAllProducts(req, res) {
     if (budget_tier) {
       filter.budget_tier = { $regex: new RegExp(`^${budget_tier}$`, 'i') };
     }
-    if (skin_type) {
-      filter.skin_types = { $in: [new RegExp(skin_type, 'i')] };
+    // Skin type filter: match the requested skin type as well as universally suitable formulas ('All')
+    if (skin_type && skin_type !== 'All') {
+      filter.skin_types = { $in: [new RegExp(`^${skin_type}$`, 'i'), /^All$/i] };
     }
     if (min_price || max_price < 100000) {
       filter.price_inr = { $gte: Number(min_price), $lte: Number(max_price) };
