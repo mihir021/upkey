@@ -72,7 +72,7 @@ function ProductMesh({ url }) {
     const box  = new THREE.Box3().setFromObject(inst);
     const size = box.getSize(new THREE.Vector3());
     const max  = Math.max(size.x, size.y, size.z, 0.001);
-    inst.scale.setScalar(3.2 / max);
+    inst.scale.setScalar(3.6 / max);
     inst.updateMatrixWorld(true);
     const box2   = new THREE.Box3().setFromObject(inst);
     const center = box2.getCenter(new THREE.Vector3());
@@ -165,7 +165,7 @@ export default function Product3DViewer({ modelUrl, category, style }) {
       }} />
 
       <Canvas
-        camera={{ position: [0, 1.2, 6], fov: 36 }}
+        camera={{ position: [0, 1.4, 5.5], fov: 36 }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
         shadows
