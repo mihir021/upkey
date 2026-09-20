@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 
 const AuthContext = createContext(null);
@@ -90,7 +90,7 @@ export function AuthProvider({ children }) {
   }
 
   // Refresh user data from server
-  async function fetchMe() {
+  const fetchMe = useCallback(async () => {
     try {
       const res = await api.get('/auth/me');
       if (res.data?.user) {
@@ -104,9 +104,9 @@ export function AuthProvider({ children }) {
         localStorage.setItem('user', JSON.stringify(refreshedUser));
       }
     } catch (err) {
-      console.error('Failed to fetch user profile:', err);
+      console.error('fetchMe error:', err);
     }
-  }
+  }, []);
 
   // Service gating helper: if user is not logged in, opens the gate modal and returns false
   function requireAuth(reason = 'enjoy Glow More services', onAuthorized) {

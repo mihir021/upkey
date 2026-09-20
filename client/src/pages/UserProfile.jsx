@@ -154,7 +154,7 @@ export default function UserProfile() {
     api.get('/orders')
       .then((res) => setOrders(res.data))
       .catch((err) => console.error('Error fetching orders:', err));
-  }, [fetchMe]);
+  }, []);
 
   // ── Analytics Computations ──────────────────────────────────────────────────
   const totalSpent = useMemo(() =>
