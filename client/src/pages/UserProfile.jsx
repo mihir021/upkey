@@ -501,6 +501,9 @@ export default function UserProfile() {
                       outerRadius={85}
                       paddingAngle={3}
                       dataKey="value"
+                      isAnimationActive={true}
+                      animationDuration={800}
+                      animationEasing="ease-out"
                     >
                       {categorySpend.map((entry, i) => (
                         <Cell key={entry.name} fill={PALETTE[i % PALETTE.length]} />
@@ -555,6 +558,9 @@ export default function UserProfile() {
                     fill="url(#spendGrad)"
                     dot={{ fill: '#E8633A', r: 3 }}
                     activeDot={{ r: 5 }}
+                    isAnimationActive={true}
+                    animationDuration={800}
+                    animationEasing="ease-out"
                   />
                 </AreaChart>
               </ResponsiveContainer>
