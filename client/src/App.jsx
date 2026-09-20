@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { CompareProvider } from './context/CompareContext';
 import AuthGateModal from './components/AuthGateModal';
+import ErrorBoundary from './components/ErrorBoundary';
 import AiChatWidget  from './components/AiChatWidget';
 import CompareBar    from './components/CompareBar';
 import LoadingScreen from './components/LoadingScreen';
@@ -43,28 +44,30 @@ function App() {
         <CartProvider>
           <CompareProvider>
             <AuthGateModal />
-            <Routes>
-              {/* ── Public ── */}
-              <Route path="/"        element={<LandingPage />} />
-              <Route path="/signup"  element={<Signup />} />
-              <Route path="/login"   element={<Login />} />
+            <ErrorBoundary showBackButton>
+              <Routes>
+                {/* ── Public ── */}
+                <Route path="/"        element={<LandingPage />} />
+                <Route path="/signup"  element={<Signup />} />
+                <Route path="/login"   element={<Login />} />
 
-              {/* ── Protected ── */}
-              <Route path="/shop"        element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
-              <Route path="/explore"     element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
-              <Route path="/compare"     element={<ProtectedRoute><ComparePage /></ProtectedRoute>} />
-              <Route path="/product/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
-              <Route path="/cart"        element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
-              <Route path="/wishlist"    element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
-              <Route path="/profile"     element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-              <Route path="/orders"      element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
-              <Route path="/rewards"     element={<ProtectedRoute><RewardsPage /></ProtectedRoute>} />
-              <Route path="/onboarding"  element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
-              <Route path="/dashboard"   element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                {/* ── Protected ── */}
+                <Route path="/shop"        element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
+                <Route path="/explore"     element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
+                <Route path="/compare"     element={<ProtectedRoute><ComparePage /></ProtectedRoute>} />
+                <Route path="/product/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
+                <Route path="/cart"        element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+                <Route path="/wishlist"    element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
+                <Route path="/profile"     element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+                <Route path="/orders"      element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+                <Route path="/rewards"     element={<ProtectedRoute><RewardsPage /></ProtectedRoute>} />
+                <Route path="/onboarding"  element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+                <Route path="/dashboard"   element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </ErrorBoundary>
             <CompareBar />
             <AiChatWidget />
           </CompareProvider>

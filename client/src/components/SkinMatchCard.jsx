@@ -13,163 +13,198 @@ import { Sparkles, ShieldCheck, ChevronRight, Droplets, Palette, Target, CircleD
  * editorial clinical-grade compatibility card with a circular progress gauge.
  */
 
+/**
+ * Safely extracts and flattens any array, pipe-separated string, comma-separated string,
+ * or scalar value into an array of clean, lowercase trimmed strings.
+ * Prevents any TypeError from unflattened nested arrays or undefined string methods.
+ */
+function toCleanStringArray(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) {
+    return val.flatMap(item => toCleanStringArray(item));
+  }
+  if (typeof val === 'string') {
+    return val.split(/[|,/]/).map(s => s.trim().toLowerCase()).filter(Boolean);
+  }
+  return [String(val).trim().toLowerCase()].filter(Boolean);
+}
+
 // ── Compatibility Scoring Algorithm ──────────────────────────────────────────
 function computeMatch(product, user) {
   if (!product) return null;
 
-  const hasProfile = Boolean(
-    user && (user.skinType || user.skinTone || (user.concerns && user.concerns.length > 0) || user.onboardingCompleted)
-  );
+  try {
+    const hasProfile = Boolean(
+      user && (user.skinType || user.skinTone || (user.concerns && user.concerns.length > 0) || user.onboardingCompleted)
+    );
 
-  // Fallback for guests or users who have not yet completed the skin onboarding quiz
-  if (!hasProfile) {
-    const isUniversal =
-      product.skin_type === 'All' ||
-      product.skin_types?.includes('All') ||
-      (product.skin_types?.length || 0) >= 3;
-    const baseScore = Math.min(94, Math.max(82, Math.round((product.rating || 4.0) * 18 + (isUniversal ? 8 : 4))));
-    return {
-      score: baseScore,
-      hasProfile: false,
-      skinTypeFit: isUniversal
+    // Fallback for guests or users who have not yet completed the skin onboarding quiz
+    if (!hasProfile) {
+      const prodSkins = toCleanStringArray(product.skin_types || product.skin_type || product.skin_type_raw);
+      const isUniversal =
+        prodSkins.includes('all') ||
+        prodSkins.includes('universal') ||
+        prodSkins.length >= 3;
+      const baseScore = Math.min(94, Math.max(82, Math.round((product.rating || 4.0) * 18 + (isUniversal ? 8 : 4))));
+      const concernsArray = toCleanStringArray(product.concerns_list || product.concerns || product.concerns_raw);
+      const concernsDisplay = concernsArray.slice(0, 2).map(c => c.charAt(0).toUpperCase() + c.slice(1)).join(', ') || 'Daily Skin Nourishment';
+      const skinTypeDisplay = isUniversal
         ? 'Formulated for All Skin Types'
-        : `Suitable for ${(product.skin_types || [product.skin_type]).filter(Boolean).join(', ') || 'Various Skin Types'}`,
-      skinToneFit: 'Universal Tone Adaptive',
-      concernsFit: product.concerns_list?.slice(0, 2).join(', ') || 'Daily Skin Nourishment',
-      budgetFit: product.price_inr ? `₹${product.price_inr.toLocaleString('en-IN')}` : 'Great Value',
-      matchTier: baseScore >= 90 ? 'Universal High Compatibility' : 'Balanced Formulation Match',
-      badgeColor: '#27AE60',
-      badgeBg: '#e8f5ec',
-      insight: `${product.brand || 'This product'} is formulated with clean active botanicals for universal daily tolerance and radiance.`,
-    };
-  }
+        : (prodSkins.length > 0
+            ? `Suitable for ${prodSkins.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')}`
+            : 'Suitable for Various Skin Types');
 
-  // 1. Skin Type Evaluation (Weight: 35 pts)
-  let skinTypePts = 20;
-  let skinTypeLabel = 'General Skin Compatibility';
-  const uSkin = (user.skinType || '').toLowerCase();
-  const prodSkins = (product.skin_types || [product.skin_type] || []).map(s => String(s).toLowerCase());
-
-  if (prodSkins.includes('all') || prodSkins.includes('universal')) {
-    skinTypePts = 33;
-    skinTypeLabel = `Universal Fit for ${user.skinType || 'your'} Skin`;
-  } else if (uSkin && prodSkins.some(s => s.includes(uSkin) || uSkin.includes(s))) {
-    skinTypePts = 35;
-    skinTypeLabel = `100% Match for ${user.skinType} Skin`;
-  } else if (uSkin === 'combination' && (prodSkins.includes('oily') || prodSkins.includes('dry'))) {
-    skinTypePts = 27;
-    skinTypeLabel = `Balanced for ${user.skinType} Skin`;
-  } else if (uSkin) {
-    skinTypePts = 18;
-    skinTypeLabel = `Gentle on ${user.skinType} Skin`;
-  }
-
-  // 2. Skin Tone Evaluation (Weight: 20 pts)
-  let skinTonePts = 20;
-  let skinToneLabel = 'Universal Shade Match';
-  const uTone = (user.skinTone || '').toLowerCase();
-  const prodTones = (product.skin_tones || [product.skin_tone] || []).map(t => String(t).toLowerCase());
-
-  const nonTinted = ['cleanser', 'toner', 'serum', 'moisturizer', 'sunscreen', 'face mask', 'exfoliator'];
-  const isNonTinted = nonTinted.includes((product.category || '').toLowerCase());
-
-  if (prodTones.includes('all') || isNonTinted || !uTone) {
-    skinTonePts = 20;
-    skinToneLabel = uTone ? `Seamless on ${user.skinTone} Tone` : 'Universal Tone Fit';
-  } else if (prodTones.some(t => t.includes(uTone))) {
-    skinTonePts = 20;
-    skinToneLabel = `Perfect for ${user.skinTone} Tone`;
-  } else {
-    skinTonePts = 14;
-    skinToneLabel = `Compatible with ${user.skinTone} Tone`;
-  }
-
-  // 3. Concerns & Goals Evaluation (Weight: 25 pts)
-  let concernsPts = 16;
-  const userConcernsList = [...(user.concerns || []), ...(user.shoppingGoals || [])].map(c => c.toLowerCase());
-  const prodConcernsList = (product.concerns_list || (product.concerns ? [product.concerns] : [])).map(c => c.toLowerCase());
-
-  const matchedConcerns = [];
-  userConcernsList.forEach(uc => {
-    if (prodConcernsList.some(pc => pc.includes(uc) || uc.includes(pc))) {
-      matchedConcerns.push(uc);
+      return {
+        score: baseScore,
+        hasProfile: false,
+        skinTypeFit: skinTypeDisplay,
+        skinToneFit: 'Universal Tone Adaptive',
+        concernsFit: concernsDisplay,
+        budgetFit: product.price_inr ? `₹${product.price_inr.toLocaleString('en-IN')}` : 'Great Value',
+        matchTier: baseScore >= 90 ? 'Universal High Compatibility' : 'Balanced Formulation Match',
+        badgeColor: '#27AE60',
+        badgeBg: '#e8f5ec',
+        insight: `${product.brand || 'This product'} is formulated with clean active botanicals for universal daily tolerance and radiance.`,
+      };
     }
-  });
 
-  let concernsLabel = '';
-  if (matchedConcerns.length > 0) {
-    concernsPts = Math.min(25, 18 + matchedConcerns.length * 4);
-    const capList = matchedConcerns.slice(0, 2).map(c => c.charAt(0).toUpperCase() + c.slice(1));
-    concernsLabel = `Targets ${capList.join(' & ')}`;
-  } else if (userConcernsList.length > 0) {
-    concernsPts = 16;
-    concernsLabel = 'Daily Nourishing Defense';
-  } else {
-    concernsPts = 20;
-    concernsLabel = product.concerns_list?.[0] ? `Targets ${product.concerns_list[0]}` : 'Multi-Action Care';
-  }
+    // 1. Skin Type Evaluation (Weight: 35 pts)
+    let skinTypePts = 20;
+    let skinTypeLabel = 'General Skin Compatibility';
+    const uSkin = String(user.skinType || '').trim().toLowerCase();
+    const prodSkins = toCleanStringArray(product.skin_types || product.skin_type || product.skin_type_raw);
 
-  // 4. Budget Harmony Evaluation (Weight: 12 pts)
-  let budgetPts = 10;
-  let budgetLabel = 'Great Value';
-  if (user.budget && product.price_inr) {
-    if (product.price_inr <= user.budget) {
-      budgetPts = 12;
-      budgetLabel = `Under your ₹${user.budget.toLocaleString('en-IN')} budget`;
-    } else if (product.price_inr <= user.budget * 1.25) {
-      budgetPts = 8;
-      budgetLabel = `Near your ₹${user.budget.toLocaleString('en-IN')} budget`;
+    if (prodSkins.includes('all') || prodSkins.includes('universal')) {
+      skinTypePts = 33;
+      skinTypeLabel = `Universal Fit for ${user.skinType || 'your'} Skin`;
+    } else if (uSkin && prodSkins.some(s => s.includes(uSkin) || uSkin.includes(s))) {
+      skinTypePts = 35;
+      skinTypeLabel = `100% Match for ${user.skinType} Skin`;
+    } else if (uSkin === 'combination' && (prodSkins.includes('oily') || prodSkins.includes('dry'))) {
+      skinTypePts = 27;
+      skinTypeLabel = `Balanced for ${user.skinType} Skin`;
+    } else if (uSkin) {
+      skinTypePts = 18;
+      skinTypeLabel = `Gentle on ${user.skinType} Skin`;
+    }
+
+    // 2. Skin Tone Evaluation (Weight: 20 pts)
+    let skinTonePts = 20;
+    let skinToneLabel = 'Universal Shade Match';
+    const uTone = String(user.skinTone || '').trim().toLowerCase();
+    const prodTones = toCleanStringArray(product.skin_tones || product.skin_tone || product.skin_tone_raw);
+
+    const nonTinted = ['cleanser', 'toner', 'serum', 'moisturizer', 'sunscreen', 'face mask', 'exfoliator'];
+    const isNonTinted = nonTinted.includes(String(product.category || '').toLowerCase());
+
+    if (prodTones.includes('all') || isNonTinted || !uTone) {
+      skinTonePts = 20;
+      skinToneLabel = uTone ? `Seamless on ${user.skinTone} Tone` : 'Universal Tone Fit';
+    } else if (prodTones.some(t => t.includes(uTone))) {
+      skinTonePts = 20;
+      skinToneLabel = `Perfect for ${user.skinTone} Tone`;
     } else {
-      budgetPts = 6;
-      budgetLabel = `Premium match (₹${product.price_inr.toLocaleString('en-IN')})`;
+      skinTonePts = 14;
+      skinToneLabel = `Compatible with ${user.skinTone} Tone`;
     }
-  } else if (product.budget_tier === 'Budget') {
-    budgetPts = 12;
-    budgetLabel = 'Budget-Friendly Formula';
+
+    // 3. Concerns & Goals Evaluation (Weight: 25 pts)
+    let concernsPts = 16;
+    const userConcernsList = toCleanStringArray([...(user.concerns || []), ...(user.shoppingGoals || [])]);
+    const prodConcernsList = toCleanStringArray(product.concerns_list || product.concerns || product.concerns_raw);
+
+    const matchedConcerns = [];
+    userConcernsList.forEach(uc => {
+      if (prodConcernsList.some(pc => pc.includes(uc) || uc.includes(pc))) {
+        matchedConcerns.push(uc);
+      }
+    });
+
+    let concernsLabel = '';
+    if (matchedConcerns.length > 0) {
+      concernsPts = Math.min(25, 18 + matchedConcerns.length * 4);
+      const capList = matchedConcerns.slice(0, 2).map(c => c.charAt(0).toUpperCase() + c.slice(1));
+      concernsLabel = `Targets ${capList.join(' & ')}`;
+    } else if (userConcernsList.length > 0) {
+      concernsPts = 16;
+      concernsLabel = 'Daily Nourishing Defense';
+    } else {
+      concernsPts = 20;
+      const firstProdConcern = prodConcernsList[0];
+      concernsLabel = firstProdConcern ? `Targets ${firstProdConcern.charAt(0).toUpperCase() + firstProdConcern.slice(1)}` : 'Multi-Action Care';
+    }
+
+    // 4. Budget Harmony Evaluation (Weight: 12 pts)
+    let budgetPts = 10;
+    let budgetLabel = 'Great Value';
+    if (user.budget && product.price_inr) {
+      if (product.price_inr <= user.budget) {
+        budgetPts = 12;
+        budgetLabel = `Under your ₹${user.budget.toLocaleString('en-IN')} budget`;
+      } else if (product.price_inr <= user.budget * 1.25) {
+        budgetPts = 8;
+        budgetLabel = `Near your ₹${user.budget.toLocaleString('en-IN')} budget`;
+      } else {
+        budgetPts = 6;
+        budgetLabel = `Premium match (₹${product.price_inr.toLocaleString('en-IN')})`;
+      }
+    } else if (product.budget_tier === 'Budget') {
+      budgetPts = 12;
+      budgetLabel = 'Budget-Friendly Formula';
+    }
+
+    // 5. Category & Ingredient Synergy (Weight: 8 pts)
+    let synergyPts = 6;
+    const prodIngs = toCleanStringArray(product.ingredients_list || product.key_ingredients || product.key_ingredients_raw);
+    const userIngs = toCleanStringArray(user.preferredIngredients);
+    const matchedIngs = userIngs.filter(ui => prodIngs.some(pi => pi.includes(ui)));
+    if (matchedIngs.length > 0) {
+      synergyPts = 8;
+    }
+
+    const rawScore = skinTypePts + skinTonePts + concernsPts + budgetPts + synergyPts;
+    const finalScore = Math.min(98, Math.max(74, rawScore));
+
+    let matchTier = 'Perfect Formulation Match';
+    let badgeColor = '#1e8a4c';
+    let badgeBg = '#e8f5ec';
+    if (finalScore < 84) {
+      matchTier = 'Compatible Gentle Match';
+      badgeColor = '#C65A15';
+      badgeBg = '#fde8d8';
+    } else if (finalScore < 93) {
+      matchTier = 'High Skin Compatibility';
+      badgeColor = '#E8633A';
+      badgeBg = '#fde8d8';
+    }
+
+    const rawActiveIng = Array.isArray(product.key_ingredients) && product.key_ingredients.length > 0
+      ? product.key_ingredients[0]
+      : (Array.isArray(product.ingredients_list) && product.ingredients_list.length > 0
+          ? product.ingredients_list[0]
+          : (product.key_ingredients || product.category || 'targeted active botanicals'));
+    const activeIng = typeof rawActiveIng === 'string' ? rawActiveIng : 'clean active botanicals';
+
+    const insight = matchedConcerns.length > 0
+      ? `Formulated with ${activeIng} to visibly address your ${matchedConcerns[0]} goals while maintaining your ${user.skinType || 'skin'} barrier balance.`
+      : `Powered by ${activeIng} for gentle, barrier-friendly efficacy suited for your ${user.skinType || 'skin'} profile.`;
+
+    return {
+      score: finalScore,
+      hasProfile: true,
+      skinTypeFit: skinTypeLabel,
+      skinToneFit: skinToneLabel,
+      concernsFit: concernsLabel,
+      budgetFit: budgetLabel,
+      matchTier,
+      badgeColor,
+      badgeBg,
+      insight,
+    };
+  } catch (err) {
+    console.error('SkinMatchCard computeMatch error:', err);
+    return null;
   }
-
-  // 5. Category & Ingredient Synergy (Weight: 8 pts)
-  let synergyPts = 6;
-  const prodIngs = (product.ingredients_list || (product.key_ingredients ? [product.key_ingredients] : [])).map(i => i.toLowerCase());
-  const userIngs = (user.preferredIngredients || []).map(i => i.toLowerCase());
-  const matchedIngs = userIngs.filter(ui => prodIngs.some(pi => pi.includes(ui)));
-  if (matchedIngs.length > 0) {
-    synergyPts = 8;
-  }
-
-  const rawScore = skinTypePts + skinTonePts + concernsPts + budgetPts + synergyPts;
-  const finalScore = Math.min(98, Math.max(74, rawScore));
-
-  let matchTier = 'Perfect Formulation Match';
-  let badgeColor = '#1e8a4c';
-  let badgeBg = '#e8f5ec';
-  if (finalScore < 84) {
-    matchTier = 'Compatible Gentle Match';
-    badgeColor = '#C65A15';
-    badgeBg = '#fde8d8';
-  } else if (finalScore < 93) {
-    matchTier = 'High Skin Compatibility';
-    badgeColor = '#E8633A';
-    badgeBg = '#fde8d8';
-  }
-
-  const activeIng = product.ingredients_list?.[0] || product.key_ingredients || 'targeted active ingredients';
-  const insight = matchedConcerns.length > 0
-    ? `Formulated with ${activeIng} to visibly address your ${matchedConcerns[0]} goals while maintaining your ${user.skinType || 'skin'} barrier balance.`
-    : `Powered by ${activeIng} for gentle, barrier-friendly efficacy suited for your ${user.skinType || 'skin'} profile.`;
-
-  return {
-    score: finalScore,
-    hasProfile: true,
-    skinTypeFit: skinTypeLabel,
-    skinToneFit: skinToneLabel,
-    concernsFit: concernsLabel,
-    budgetFit: budgetLabel,
-    matchTier,
-    badgeColor,
-    badgeBg,
-    insight,
-  };
 }
 
 export default function SkinMatchCard({ product, user }) {

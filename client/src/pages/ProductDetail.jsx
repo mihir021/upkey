@@ -4,6 +4,7 @@ import { ArrowLeft, Heart, Share2, ShoppingBag, Star, CheckCircle, Box } from 'l
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
 import SkinMatchCard from '../components/SkinMatchCard';
+import ErrorBoundary from '../components/ErrorBoundary';
 import api from '../api/axios';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -221,18 +222,35 @@ export default function ProductDetail() {
                   </div>
                 )
               ) : (
-                <Suspense fallback={
-                  <div style={{ textAlign:'center', color:'#665D57' }}>
-                    <Box size={32} style={{ margin:'0 auto 8px', display:'block', color:'#E8633A' }} />
-                    <span style={{ fontSize:12, fontWeight:600 }}>Loading 3D Model…</span>
-                  </div>
-                }>
-                  <Product3DViewer
-                    modelUrl={product.cloudinary_link}
-                    category={product.category}
-                    style={{ position:'absolute', inset:0, borderRadius:0 }}
-                  />
-                </Suspense>
+                <ErrorBoundary
+                  minimal
+                  fallback={
+                    <div style={{ textAlign:'center', padding:20 }}>
+                      <span style={{ fontSize:56 }}>🧊</span>
+                      <p style={{ color:'#231E1B', fontWeight:700, margin:'10px 0 4px', fontSize:16 }}>Interactive 3D View</p>
+                      <p style={{ color:'#665D57', fontSize:12, margin:'0 0 14px' }}>3D preview is currently optimizing for your browser</p>
+                      <button onClick={() => setViewMode('image')} style={{
+                        padding:'8px 20px', background:'#E8633A', color:'#fff',
+                        border:'none', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer',
+                      }}>
+                        Switch to Photo View →
+                      </button>
+                    </div>
+                  }
+                >
+                  <Suspense fallback={
+                    <div style={{ textAlign:'center', color:'#665D57' }}>
+                      <Box size={32} style={{ margin:'0 auto 8px', display:'block', color:'#E8633A' }} />
+                      <span style={{ fontSize:12, fontWeight:600 }}>Loading 3D Model…</span>
+                    </div>
+                  }>
+                    <Product3DViewer
+                      modelUrl={product.cloudinary_link}
+                      category={product.category}
+                      style={{ position:'absolute', inset:0, borderRadius:0 }}
+                    />
+                  </Suspense>
+                </ErrorBoundary>
               )}
             </div>
 
@@ -311,20 +329,22 @@ export default function ProductDetail() {
 
             {/* Tags */}
             <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-              {product.skin_types?.map(st => (
+              {(product.skin_types || (product.skin_type ? (Array.isArray(product.skin_type) ? product.skin_type : [product.skin_type]) : [])).map(st => (
                 <span key={st} style={{ padding:'4px 12px', background:'#F6EFE9', color:'#665D57', borderRadius:20, fontSize:12, fontWeight:600, border:'1px solid #EADFD4' }}>
                   {st}
                 </span>
               ))}
-              {product.concerns_list?.slice(0,3).map(c => (
+              {(product.concerns_list || (product.concerns ? (Array.isArray(product.concerns) ? product.concerns : [product.concerns]) : [])).slice(0,3).map(c => (
                 <span key={c} style={{ padding:'4px 12px', background:'#fde8d8', color:'#E8633A', borderRadius:20, fontSize:12, fontWeight:600 }}>
                   {c}
                 </span>
               ))}
             </div>
 
-            {/* AI Skin Compatibility Match Card */}
-            <SkinMatchCard product={product} user={user} />
+            {/* AI Skin Compatibility Match Card protected by ErrorBoundary */}
+            <ErrorBoundary minimal fallback={null}>
+              <SkinMatchCard product={product} user={user} />
+            </ErrorBoundary>
 
             {/* Quantity + Actions */}
             <div style={{ display:'flex', alignItems:'center', gap:16, marginTop:8 }}>
@@ -395,17 +415,17 @@ export default function ProductDetail() {
             <div style={{ maxWidth:680 }}>
               <h3 style={{ margin:'0 0 12px', color:'#231E1B', fontSize:16, fontWeight:700 }}>About this Product</h3>
               <p style={{ color:'#665D57', lineHeight:1.75, fontSize:14.5, margin:'0 0 20px' }}>
-                Introducing the <strong>{product.name}</strong> by <strong>{product.brand}</strong> — a {product.budget_tier ? `${product.budget_tier.toLowerCase()} ` : ''}{product.category?.toLowerCase()} crafted for {product.skin_types?.join(' and ') || 'all'} skin types.{' '}
-                {product.concerns_list && product.concerns_list.length > 0 && product.concerns_list[0]
-                  ? `Formulated to address ${product.concerns_list.join(', ')}, this product delivers visible results with regular use.`
+                Introducing the <strong>{product.name}</strong> by <strong>{product.brand}</strong> — a {product.budget_tier ? `${product.budget_tier.toLowerCase()} ` : ''}{product.category?.toLowerCase()} crafted for {(product.skin_types || (product.skin_type ? (Array.isArray(product.skin_type) ? product.skin_type : [product.skin_type]) : ['all'])).join(' and ') || 'all'} skin types.{' '}
+                {((product.concerns_list && product.concerns_list.length > 0) || (product.concerns && product.concerns.length > 0))
+                  ? `Formulated to address ${(product.concerns_list || (Array.isArray(product.concerns) ? product.concerns : [product.concerns])).join(', ')}, this product delivers visible results with regular use.`
                   : 'Formulated with targeted active ingredients, this product delivers visible results with regular use.'}{' '}
                 Suitable for all skin tones, it fits seamlessly into any skincare routine.
               </p>
               <h4 style={{ margin:'0 0 10px', color:'#231E1B', fontSize:14, fontWeight:700 }}>Key Benefits</h4>
               <ul style={{ color:'#665D57', lineHeight:2, fontSize:14, paddingLeft:20 }}>
-                {product.concerns_list?.filter(Boolean).map(c => <li key={c}>Addresses {c}</li>)}
-                {product.skin_types?.length > 0 && <li>Suitable for {product.skin_types.join(' & ')} skin</li>}
-                {product.ingredients_list?.length > 0 && <li>Powered by {product.ingredients_list.slice(0,2).join(' & ')}</li>}
+                {(product.concerns_list || (product.concerns ? (Array.isArray(product.concerns) ? product.concerns : [product.concerns]) : [])).filter(Boolean).map(c => <li key={c}>Addresses {c}</li>)}
+                {(product.skin_types || (product.skin_type ? [product.skin_type] : [])).length > 0 && <li>Suitable for {(product.skin_types || [product.skin_type]).join(' & ')} skin</li>}
+                {(product.ingredients_list || (product.key_ingredients ? (Array.isArray(product.key_ingredients) ? product.key_ingredients : [product.key_ingredients]) : [])).length > 0 && <li>Powered by {(product.ingredients_list || (Array.isArray(product.key_ingredients) ? product.key_ingredients : [product.key_ingredients])).slice(0,2).join(' & ')}</li>}
               </ul>
             </div>
           )}
@@ -414,7 +434,7 @@ export default function ProductDetail() {
             <div style={{ maxWidth:680 }}>
               <h3 style={{ margin:'0 0 16px', color:'#231E1B', fontSize:16, fontWeight:700 }}>Key Ingredients</h3>
               <div style={{ display:'flex', flexWrap:'wrap', gap:10, marginBottom:24 }}>
-                {product.ingredients_list?.map(ing => (
+                {(product.ingredients_list || (product.key_ingredients ? (Array.isArray(product.key_ingredients) ? product.key_ingredients : [product.key_ingredients]) : [])).map(ing => (
                   <div key={ing} style={{
                     padding:'10px 16px', background:'#fff', border:'1.5px solid #EADFD4',
                     borderRadius:14, fontSize:13, fontWeight:600, color:'#231E1B',
