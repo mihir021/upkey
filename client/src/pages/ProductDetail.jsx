@@ -179,124 +179,176 @@ export default function ProductDetail() {
           <span style={{ fontSize:13, color:'#231E1B', fontWeight:600 }}>{product.name}</span>
         </div>
 
-        {/* Main content */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:40, alignItems:'start' }} className="product-grid">
-          {/* Image / 3D panel */}
-          <div style={{ borderRadius:24, overflow:'hidden', background: imgBg, height:420, position:'relative', display:'flex', flexDirection:'column' }}>
-
-            {/* View mode toggle tabs */}
+        {/* Main content — 2-column editorial grid with sticky gallery */}
+        <div style={{ display:'grid', gridTemplateColumns:'minmax(0, 1fr) minmax(0, 1.15fr)', gap:48, alignItems:'start' }} className="product-grid">
+          {/* Left Column: Sticky Showcase & Media Gallery */}
+          <div className="product-gallery-column" style={{ position:'sticky', top:96, alignSelf:'start' }}>
             <div style={{
-              display:'flex', padding:'10px 12px 0', gap:6, zIndex:5, position:'relative',
+              borderRadius: 24,
+              overflow: 'hidden',
+              background: imgBg,
+              aspectRatio: '1 / 1',
+              minHeight: 460,
+              maxHeight: 540,
+              width: '100%',
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 12px 36px rgba(35,30,27,0.06)',
+              border: '1.5px solid #F0DCCE',
             }}>
-              {[['image','🖼 Image'], ['3d','🧊 3D View']].map(([mode, label]) => (
-                <button key={mode} onClick={() => setViewMode(mode)} style={{
-                  padding:'5px 14px', borderRadius:20, border:'none', cursor:'pointer',
-                  fontSize:11, fontWeight:700, letterSpacing:.4,
-                  background: viewMode === mode ? '#E8633A' : 'rgba(255,255,255,0.75)',
-                  color: viewMode === mode ? '#fff' : '#665D57',
-                  backdropFilter:'blur(6px)',
-                  boxShadow: viewMode === mode ? '0 2px 10px rgba(232,99,58,.35)' : 'none',
-                  transition:'all .2s',
-                }}>{label}</button>
-              ))}
-            </div>
 
-            {/* Content area */}
-            <div style={{ flex:1, position:'relative', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              {viewMode === 'image' ? (
-                src ? (
-                  <img src={src} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover', position:'absolute', inset:0 }}
-                    onError={e => { e.target.style.display='none'; }} />
-                ) : (
-                  <div style={{ textAlign:'center', padding:20 }}>
-                    <span style={{ fontSize:56 }}>🧊</span>
-                    <p style={{ color:'#231E1B', fontWeight:700, margin:'10px 0 4px', fontSize:16 }}>Interactive 3D Model</p>
-                    <p style={{ color:'#665D57', fontSize:12, margin:'0 0 14px' }}>This product is featured in full 3D</p>
-                    <button onClick={() => setViewMode('3d')} style={{
-                      padding:'8px 20px', background:'#E8633A', color:'#fff',
-                      border:'none', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer',
-                      boxShadow:'0 2px 10px rgba(232,99,58,.35)'
-                    }}>
-                      Switch to 3D View →
-                    </button>
-                  </div>
-                )
-              ) : (
-                <ErrorBoundary
-                  minimal
-                  fallback={
-                    <div style={{ textAlign:'center', padding:20 }}>
+              {/* Top floating control bar with view mode toggle and actions */}
+              <div style={{
+                position: 'absolute',
+                top: 14,
+                left: 14,
+                right: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                zIndex: 10,
+                pointerEvents: 'none',
+              }}>
+                {/* View mode toggle tabs */}
+                <div style={{ display: 'flex', gap: 6, pointerEvents: 'auto' }}>
+                  {[['image','🖼 Image'], ['3d','🧊 3D View']].map(([mode, label]) => (
+                    <button key={mode} onClick={() => setViewMode(mode)} style={{
+                      padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
+                      fontSize: 11, fontWeight: 700, letterSpacing: .4,
+                      background: viewMode === mode ? '#E8633A' : 'rgba(255,255,255,0.85)',
+                      color: viewMode === mode ? '#fff' : '#665D57',
+                      backdropFilter: 'blur(10px)',
+                      boxShadow: viewMode === mode ? '0 2px 10px rgba(232,99,58,.35)' : '0 2px 8px rgba(0,0,0,0.04)',
+                      transition: 'all .2s',
+                    }}>{label}</button>
+                  ))}
+                </div>
+
+                {/* Actions: Wishlist & Share grouped neatly in top right */}
+                <div style={{ display: 'flex', gap: 8, pointerEvents: 'auto' }}>
+                  <button onClick={() => toggleWishlist(product)} title="Save to Wishlist" style={{
+                    width: 38, height: 38, borderRadius: '50%',
+                    background: wished ? '#E8633A' : 'rgba(255,255,255,0.88)',
+                    border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backdropFilter: 'blur(10px)',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                    transition: 'all .2s',
+                  }}>
+                    <Heart size={17} fill={wished ? '#fff' : 'none'} color={wished ? '#fff' : '#E8633A'} />
+                  </button>
+                  <button onClick={handleShare} title="Share product link" style={{
+                    width: 38, height: 38, borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.88)',
+                    border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backdropFilter: 'blur(10px)',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                    transition: 'all .2s',
+                  }}>
+                    {copied ? <CheckCircle size={17} color="#27AE60" /> : <Share2 size={17} color="#665D57" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Content area: Photo or 3D canvas */}
+              <div style={{ flex: 1, width: '100%', height: '100%', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {viewMode === 'image' ? (
+                  src ? (
+                    <img
+                      src={src}
+                      alt={product.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        objectPosition: 'center',
+                        display: 'block',
+                      }}
+                      onError={e => { e.target.style.display='none'; }}
+                    />
+                  ) : (
+                    <div style={{ textAlign:'center', padding:24 }}>
                       <span style={{ fontSize:56 }}>🧊</span>
-                      <p style={{ color:'#231E1B', fontWeight:700, margin:'10px 0 4px', fontSize:16 }}>Interactive 3D View</p>
-                      <p style={{ color:'#665D57', fontSize:12, margin:'0 0 14px' }}>3D preview is currently optimizing for your browser</p>
-                      <button onClick={() => setViewMode('image')} style={{
+                      <p style={{ color:'#231E1B', fontWeight:700, margin:'10px 0 4px', fontSize:16 }}>Interactive 3D Model</p>
+                      <p style={{ color:'#665D57', fontSize:12, margin:'0 0 14px' }}>This product is featured in full 3D</p>
+                      <button onClick={() => setViewMode('3d')} style={{
                         padding:'8px 20px', background:'#E8633A', color:'#fff',
                         border:'none', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer',
+                        boxShadow:'0 2px 10px rgba(232,99,58,.35)'
                       }}>
-                        Switch to Photo View →
+                        Switch to 3D View →
                       </button>
                     </div>
-                  }
-                >
-                  <Suspense fallback={
-                    <div style={{ textAlign:'center', color:'#665D57' }}>
-                      <Box size={32} style={{ margin:'0 auto 8px', display:'block', color:'#E8633A' }} />
-                      <span style={{ fontSize:12, fontWeight:600 }}>Loading 3D Model…</span>
-                    </div>
-                  }>
-                    <Product3DViewer
-                      modelUrl={product.cloudinary_link}
-                      category={product.category}
-                      style={{ position:'absolute', inset:0, borderRadius:0 }}
-                    />
-                  </Suspense>
-                </ErrorBoundary>
+                  )
+                ) : (
+                  <ErrorBoundary
+                    minimal
+                    fallback={
+                      <div style={{ textAlign:'center', padding:20 }}>
+                        <span style={{ fontSize:56 }}>🧊</span>
+                        <p style={{ color:'#231E1B', fontWeight:700, margin:'10px 0 4px', fontSize:16 }}>Interactive 3D View</p>
+                        <p style={{ color:'#665D57', fontSize:12, margin:'0 0 14px' }}>3D preview is currently optimizing for your browser</p>
+                        <button onClick={() => setViewMode('image')} style={{
+                          padding:'8px 20px', background:'#E8633A', color:'#fff',
+                          border:'none', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer',
+                        }}>
+                          Switch to Photo View →
+                        </button>
+                      </div>
+                    }
+                  >
+                    <Suspense fallback={
+                      <div style={{ textAlign:'center', color:'#665D57' }}>
+                        <Box size={32} style={{ margin:'0 auto 8px', display:'block', color:'#E8633A' }} />
+                        <span style={{ fontSize:12, fontWeight:600 }}>Loading 3D Model…</span>
+                      </div>
+                    }>
+                      <Product3DViewer
+                        modelUrl={product.cloudinary_link}
+                        category={product.category}
+                        style={{ position:'absolute', inset:0, borderRadius:0 }}
+                      />
+                    </Suspense>
+                  </ErrorBoundary>
+                )}
+              </div>
+
+              {/* Budget tier badge at bottom left */}
+              {product.budget_tier && (
+                <span style={{
+                  position:'absolute', bottom:14, left:14,
+                  background:'rgba(255,255,255,.9)', color:'#665D57',
+                  padding:'5px 14px', borderRadius:20, fontSize:11, fontWeight:700,
+                  backdropFilter:'blur(8px)',
+                  boxShadow:'0 2px 8px rgba(0,0,0,0.05)',
+                  zIndex: 8,
+                }}>
+                  {product.budget_tier}
+                </span>
               )}
             </div>
-
-            {/* Overlay buttons */}
-            <button onClick={() => toggleWishlist(product)} style={{
-              position:'absolute', top:52, right:16,
-              width:44, height:44, borderRadius:'50%',
-              background: wished ? '#E8633A' : 'rgba(255,255,255,.9)',
-              border:'none', cursor:'pointer',
-              display:'flex', alignItems:'center', justifyContent:'center',
-              boxShadow:'0 2px 12px rgba(0,0,0,.15)',
-              transition:'all .2s',
-              zIndex:6,
-            }}>
-              <Heart size={18} fill={wished ? '#fff' : 'none'} color={wished ? '#fff' : '#E8633A'} />
-            </button>
-            <button onClick={handleShare} style={{
-              position:'absolute', top:104, right:16,
-              width:44, height:44, borderRadius:'50%',
-              background:'rgba(255,255,255,.9)',
-              border:'none', cursor:'pointer',
-              zIndex:6,
-              display:'flex', alignItems:'center', justifyContent:'center',
-              boxShadow:'0 2px 12px rgba(0,0,0,.15)',
-            }}>
-              {copied ? <CheckCircle size={18} color="#27AE60" /> : <Share2 size={18} color="#665D57" />}
-            </button>
-            {/* Budget badge */}
-            {product.budget_tier && (
-              <span style={{
-                position:'absolute', bottom:16, left:16,
-                background:'rgba(255,255,255,.9)', color:'#665D57',
-                padding:'4px 14px', borderRadius:20, fontSize:11, fontWeight:700,
-              }}>
-                {product.budget_tier}
-              </span>
-            )}
           </div>
 
-          {/* Info panel */}
-          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+          {/* Right Column: Information, Compatibility, and Actions */}
+          <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
             <div>
-              <span style={{ fontSize:11, color:'#E8633A', fontWeight:700, letterSpacing:1, textTransform:'uppercase' }}>
+              <span style={{
+                display: 'inline-block',
+                fontSize: 11,
+                color: '#E8633A',
+                fontWeight: 700,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                background: '#fde8d8',
+                padding: '4px 10px',
+                borderRadius: 8,
+                marginBottom: 8,
+              }}>
                 {product.brand}
               </span>
-              <h1 style={{ margin:'6px 0 0', fontSize:'clamp(20px,3vw,28px)', fontWeight:800, color:'#231E1B', lineHeight:1.2, fontFamily:'"Playfair Display",serif' }}>
+              <h1 style={{ margin:0, fontSize:'clamp(22px,3.2vw,30px)', fontWeight:800, color:'#231E1B', lineHeight:1.2, fontFamily:'"Playfair Display",serif' }}>
                 {product.name}
               </h1>
             </div>
@@ -535,8 +587,9 @@ export default function ProductDetail() {
 
       <style>{`
         @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-        @media(max-width:768px){
-          .product-grid { grid-template-columns:1fr !important; }
+        @media(max-width:880px){
+          .product-grid { grid-template-columns:1fr !important; gap: 32px !important; }
+          .product-gallery-column { position: relative !important; top: 0 !important; }
         }
       `}</style>
     </div>
