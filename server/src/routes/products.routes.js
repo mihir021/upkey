@@ -5,9 +5,11 @@ const {
   getProductById,
   getCategories,
   getRecommendations,
+  getCatalogValues,
 } = require('../controllers/products.controller');
 
 router.get('/categories', getCategories);
+router.get('/catalog-values', getCatalogValues);
 router.get('/:id/recommendations', getRecommendations);
 router.get('/:id', getProductById);
 router.get('/', getAllProducts);

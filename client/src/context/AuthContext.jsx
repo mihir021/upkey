@@ -89,6 +89,25 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('user');
   }
 
+  // Refresh user data from server
+  async function fetchMe() {
+    try {
+      const res = await api.get('/auth/me');
+      if (res.data?.user) {
+        // Ensure onboardingCompleted is cleanly typed
+        const refreshedUser = {
+          ...res.data.user,
+          id: res.data.user._id,
+          onboardingCompleted: Boolean(res.data.user.onboardingCompleted),
+        };
+        setUser(refreshedUser);
+        localStorage.setItem('user', JSON.stringify(refreshedUser));
+      }
+    } catch (err) {
+      console.error('Failed to fetch user profile:', err);
+    }
+  }
+
   // Service gating helper: if user is not logged in, opens the gate modal and returns false
   function requireAuth(reason = 'enjoy Glow More services', onAuthorized) {
     if (!token || !user) {
@@ -118,6 +137,7 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
+    fetchMe,
     gateModalOpen,
     gateReason,
     openGate,
@@ -146,6 +166,7 @@ export function useAuth() {
         return res.data;
       },
       logout: () => {},
+      fetchMe: async () => {},
       gateModalOpen: false,
       gateReason: '',
       openGate: () => {},

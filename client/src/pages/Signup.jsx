@@ -90,7 +90,7 @@ function Signup() {
     setLoading(true);
     try {
       await signup(form);
-      navigate('/shop');
+      navigate('/onboarding');
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed.');
     } finally {

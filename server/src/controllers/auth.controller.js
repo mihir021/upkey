@@ -8,6 +8,16 @@ function signToken(user) {
   return jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 }
 
+/** Safely extract the public user object to send to the frontend. */
+function publicUser(user) {
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    onboardingCompleted: Boolean(user.onboardingCompleted),
+  };
+}
+
 async function signup(req, res) {
   try {
     const { name, email, password } = req.body;
@@ -24,7 +34,7 @@ async function signup(req, res) {
 
     res.status(201).json({
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: publicUser(user),
     });
   } catch (err) {
     console.error('Signup error:', err);
@@ -52,7 +62,7 @@ async function login(req, res) {
 
     res.status(200).json({
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: publicUser(user),
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -60,4 +70,22 @@ async function login(req, res) {
   }
 }
 
-module.exports = { signup, login };
+/**
+ * GET /api/auth/me
+ * Returns the authenticated user's full profile including preferences.
+ */
+async function getMe(req, res) {
+  try {
+    const user = await User.findById(req.userId).select('-passwordHash');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    res.status(200).json({ user });
+  } catch (err) {
+    console.error('getMe error:', err);
+    res.status(500).json({ message: 'Something went wrong.' });
+  }
+}
+
+module.exports = { signup, login, getMe };
+
